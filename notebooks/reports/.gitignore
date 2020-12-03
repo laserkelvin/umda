@@ -1,0 +1,5 @@
+*.pdf
+dask-worker-space/
+*.svg
+*.html
+*.dat
