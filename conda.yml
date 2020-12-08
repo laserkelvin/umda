@@ -72,4 +72,7 @@ dependencies:
   - h5py
   - dask
   - dask-ml
+  - black
+  - ipywidgets=7.5
+  - jupyterlab
 prefix: /home/kelvin/anaconda3/envs/rdkit
