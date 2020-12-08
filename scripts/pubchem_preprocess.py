@@ -1,4 +1,3 @@
-
 from tqdm.auto import tqdm
 from umda.smi_vec import canonicize_smi
 

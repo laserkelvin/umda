@@ -1,4 +1,3 @@
-
 """
 Embedding pipeline
 
@@ -17,8 +16,9 @@ from umda import smi_vec, EmbeddingModel
 from dask_ml.decomposition import IncrementalPCA
 from dask_ml.cluster import KMeans
 from dask import array as da
-#from sklearn.decomposition import IncrementalPCA
-#from sklearn.cluster import KMeans
+
+# from sklearn.decomposition import IncrementalPCA
+# from sklearn.cluster import KMeans
 from sklearn.pipeline import make_pipeline
 from loguru import logger
 from joblib import dump
@@ -39,7 +39,7 @@ embedding_dim = 300
 pca_dim = 100
 n_clusters = 20
 h5_target = f"../data/processed/smiles_embeddings_{embedding_dim}.h5"
-#h5_file = h5py.File(f"../data/processed/smiles_embeddings_{embedding_dim}.h5", "a")
+# h5_file = h5py.File(f"../data/processed/smiles_embeddings_{embedding_dim}.h5", "a")
 
 
 RERUN = False

@@ -46,7 +46,7 @@ kida_df = pd.read_csv("../data/external/kida-molecules_05_Jul_2020.csv")
 kida_df["SMILES"] = kida_df["InChI"].apply(inchi_to_smiles)
 
 # Extract only those with SMILES strings
-kida_smiles = kida_df.loc[(kida_df["SMILES"].str.len() != 0.)].dropna()
+kida_smiles = kida_df.loc[(kida_df["SMILES"].str.len() != 0.0)].dropna()
 # append all the KIDA entries to our full list
 smi_list.extend(kida_smiles["SMILES"].to_list())
 
@@ -72,12 +72,12 @@ logger.info("Canonicizing all SMILES.")
 smi_list = Parallel(n_jobs=6)(delayed(canonicize_smi)(smi) for smi in smi_list)
 # smi_list = [canonicize_smi(smi) for smi in smi_list]
 
-#logger.info("Adding PubChem canonical SMILES")
+# logger.info("Adding PubChem canonical SMILES")
 ## add the PubChem pre-sanitized
-#with open("../data/external/pubchem/pubchem_screened.smi", "r") as read_file:
+# with open("../data/external/pubchem/pubchem_screened.smi", "r") as read_file:
 #    smi_list.extend(read_file.readlines())
 #
-#logger.info(f"Dataset size with PubChem: {len(smi_list)}")
+# logger.info(f"Dataset size with PubChem: {len(smi_list)}")
 
 # extract unique SMILES only
 smi_list = list(set(smi_list))
@@ -92,8 +92,8 @@ for smi in smi_list:
 final_df["MW"] = molecular_weights
 
 # remove duplicate entries according to canonical SMILES
-#final_df.drop_duplicates("Raw", inplace=True)
-#final_df.reset_index(inplace=True, drop=True)
+# final_df.drop_duplicates("Raw", inplace=True)
+# final_df.reset_index(inplace=True, drop=True)
 
 logger.info(f"Final size of dataset without duplication: {len(final_df)}.")
 
