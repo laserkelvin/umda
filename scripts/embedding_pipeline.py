@@ -14,10 +14,11 @@ dask_ml versions of sklearn algorithms for this step.
 import h5py
 import numpy as np
 from umda import smi_vec, EmbeddingModel
-# from dask_ml.decomposition import IncrementalPCA
-# from dask_ml.cluster import KMeans
-from sklearn.decomposition import IncrementalPCA
-from sklearn.cluster import KMeans
+from dask_ml.decomposition import IncrementalPCA
+from dask_ml.cluster import KMeans
+from dask import array as da
+#from sklearn.decomposition import IncrementalPCA
+#from sklearn.cluster import KMeans
 from sklearn.pipeline import make_pipeline
 from loguru import logger
 from joblib import dump
@@ -37,7 +38,8 @@ m2v_model = smi_vec.load_model("../models/mol2vec_model.pkl")
 embedding_dim = 300
 pca_dim = 100
 n_clusters = 20
-h5_file = h5py.File(f"../data/processed/smiles_embeddings_{embedding_dim}.h5", "a")
+h5_target = f"../data/processed/smiles_embeddings_{embedding_dim}.h5"
+#h5_file = h5py.File(f"../data/processed/smiles_embeddings_{embedding_dim}.h5", "a")
 
 
 RERUN = False
@@ -51,29 +53,35 @@ if RERUN:
 
     with open("../data/interim/collected_smiles.smi") as read_file:
         smi_list = read_file.readlines()
-
+    smi_list = [smi for smi in smi_list if smi != "\n"]
     smi_list = list(map(lambda x: x.strip(), smi_list))
 
     logger.info("Beginning vectorization of SMILES.")
-    smi_vec.serial_smi_vectorization(smi_list, m2v_model, h5_file, embedding_dim)
+    with h5py.File(h5_target, "a") as h5_file:
+        smi_vec.serial_smi_vectorization(smi_list, m2v_model, h5_file, embedding_dim)
 else:
-    del h5_file["pca"]
-    del h5_file["cluster_ids"]
+    with h5py.File(h5_target, "a") as h5_file:
+        for key in ["pca", "cluster_ids"]:
+            try:
+                del h5_file[key]
+            except:
+                pass
 
+h5_file = h5py.File(h5_target, "a")
 logger.info("Beginning PCA dimensionality reduction")
 # perform PCA dimensionality reduction
 pca_model = IncrementalPCA(n_components=pca_dim)
-vectors = h5_file["vectors"]
+vectors = da.from_array(h5_file["vectors"])
 pca_model.fit(vectors)
-h5_file["pca"] = pca_model.transform(vectors)
+h5_file["pca"] = pca_model.transform(vectors).compute()
 
 logger.info("Saving the trained PCA model.")
 dump(pca_model, "../models/pca_model.pkl")
 
 logger.info("Performing K-means clustering on dataset")
-kmeans = KMeans(n_clusters=n_clusters, random_state=seed, metric="cosine")
+kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
 kmeans.fit(h5_file["pca"])
-h5_file["cluster_ids"] = kmeans.labels_
+h5_file["cluster_ids"] = kmeans.labels_.compute()
 dump(kmeans, "../models/kmeans_model.pkl")
 
 logger.info("Combining the models into a pipeline")

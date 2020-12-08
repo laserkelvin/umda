@@ -72,6 +72,16 @@ logger.info("Canonicizing all SMILES.")
 smi_list = Parallel(n_jobs=6)(delayed(canonicize_smi)(smi) for smi in smi_list)
 # smi_list = [canonicize_smi(smi) for smi in smi_list]
 
+#logger.info("Adding PubChem canonical SMILES")
+## add the PubChem pre-sanitized
+#with open("../data/external/pubchem/pubchem_screened.smi", "r") as read_file:
+#    smi_list.extend(read_file.readlines())
+#
+#logger.info(f"Dataset size with PubChem: {len(smi_list)}")
+
+# extract unique SMILES only
+smi_list = list(set(smi_list))
+
 final_df = pd.DataFrame(smi_list, columns=["Raw"])
 # calculating molecular weights
 molecular_weights = list()
@@ -82,11 +92,14 @@ for smi in smi_list:
 final_df["MW"] = molecular_weights
 
 # remove duplicate entries according to canonical SMILES
-final_df.drop_duplicates("Raw", inplace=True)
-final_df.reset_index(inplace=True, drop=True)
+#final_df.drop_duplicates("Raw", inplace=True)
+#final_df.reset_index(inplace=True, drop=True)
 
 logger.info(f"Final size of dataset without duplication: {len(final_df)}.")
 
 final_df.to_pickle("../data/processed/combined_smiles.pkl.bz2")
 # save a separate SMILES file for mol2vec use
-final_df["Raw"].to_csv("../data/interim/collected_smiles.smi", sep="\n", index=False, header=None)
+with open("../data/interim/collected_smiles.smi", "w+") as write_file:
+    for smi in smi_list:
+        if smi != "":
+            write_file.write(f"{smi}\n")
