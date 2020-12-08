@@ -47,7 +47,7 @@ def parallel_smi_vectorization(smiles: List[str], model, h5_file, workers: int =
     Unfortunately, not appreciably faster, probably because you have to pickle the
     model and we're I/O limited.
     """
-    vectors = Parallel(n_jobs=workers)(delayed(smi_to_vector)(smi, model, radius) for smi in smiles)
+    vectors = Parallel(n_jobs=workers)(delayed(smi_to_vector)(smi, model, radius) for smi in tqdm(smiles))
     h5_file["vectors"] = vectors
     dt = h5py.string_dtype()
     smiles = h5_file.create_dataset("smiles", (len(smiles),), dtype=dt)

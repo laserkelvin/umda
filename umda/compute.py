@@ -2,6 +2,7 @@
 
 import numpy as np
 import numba
+from dask import array as da
 
 
 @numba.njit(fastmath=True)
