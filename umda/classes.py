@@ -116,7 +116,7 @@ class MRS(object):
         embedding_model=None,
         top: int = 10,
         dist_thres: float = 1e-5,
-        cluster: bool = True
+        cluster: bool = True,
     ):
         """
         Recommend molecules and predict their abundances, given a target inventory (i.e. what
@@ -157,7 +157,9 @@ class MRS(object):
             data_ref = self._data
         else:
             data_ref = h5_data
-        dataset = data_ref["pca"][:] if "pca" in data_ref.keys() else data_ref["vectors"][:]
+        dataset = (
+            data_ref["pca"][:] if "pca" in data_ref.keys() else data_ref["vectors"][:]
+        )
         all_smiles = data_ref["smiles"][:]
         nsamples, embedding_dim = dataset.shape
         if not smi and X is None:
@@ -175,7 +177,9 @@ class MRS(object):
             # match the input species into clusters
             cluster_ids = self.cluster(X)
             # match molecules
-            mask = (data_ref["cluster_ids"][:] == np.unique(cluster_ids)[:,None]).any(axis=1)
+            mask = (data_ref["cluster_ids"][:] == np.unique(cluster_ids)[:, None]).any(
+                axis=1
+            )
             logger.info(f"Using the following clusters: {np.unique(cluster_ids)}")
         distances = self.measure_distance(X, dataset)
         # exclude molecules that are in both the dataset and inventory and merge
@@ -208,14 +212,16 @@ class MRS(object):
         results.reset_index(inplace=True, drop=True)
         return results
 
-    def predict(self, X: np.ndarray = None, smi: List[str] = None, embedding_model=None) -> np.ndarray:
+    def predict(
+        self, X: np.ndarray = None, smi: List[str] = None, embedding_model=None
+    ) -> np.ndarray:
         if X is None and smi is None:
             raise Exception("No molecules specified, both X and smi are `None`!")
         if X is None:
             X = np.vstack([embedding_model(s) for s in smi])
         results = self.estimator(X)
         results["SMILES"] = smi
-        return pd.DataFrame.from_dict(results)        
+        return pd.DataFrame.from_dict(results)
 
     def save(self, path: str):
         dump(self, path)
@@ -234,10 +240,15 @@ class DaskMRS(MRS):
     MRS : [type]
         [description]
     """
-    def __init__(self, cluster_model, estimator, metric: str = "euclidean", h5_file: str = None) -> None:
+
+    def __init__(
+        self, cluster_model, estimator, metric: str = "euclidean", h5_file: str = None
+    ) -> None:
         super().__init__(cluster_model, estimator, metric=metric, h5_file=h5_file)
         self._distance = metrics.pairwise.euclidean_distances
-        logger.warning("Dask version of MRS is being run; logging messages may not be accurate!")
+        logger.warning(
+            "Dask version of MRS is being run; logging messages may not be accurate!"
+        )
 
     def _find_top_recs(self, A: da.array, B: da.array, top: int = 10) -> da.array:
         indices = list()
@@ -257,7 +268,7 @@ class DaskMRS(MRS):
         embedding_model=None,
         top: int = 10,
         dist_thres: float = 1e-5,
-        cluster: bool = True
+        cluster: bool = True,
     ):
         """
         Recommend molecules and predict their abundances, given a target inventory (i.e. what
@@ -291,7 +302,11 @@ class DaskMRS(MRS):
             data_ref = self._data
         else:
             data_ref = h5_data
-        dataset = da.from_array(data_ref["pca"]) if "pca" in data_ref.keys() else da.from_array(data_ref["vectors"])
+        dataset = (
+            da.from_array(data_ref["pca"])
+            if "pca" in data_ref.keys()
+            else da.from_array(data_ref["vectors"])
+        )
         all_smiles = data_ref["smiles"][:]
         nsamples, embedding_dim = dataset.shape
         if not smi and X is None:
@@ -312,7 +327,7 @@ class DaskMRS(MRS):
             # negate the mask if we're clustering
             unique_ids = da.unique(cluster_ids)
             # unique_ids.compute_chunk_sizes()
-            mask = (ref_cluster_ids == unique_ids[:,None]).any(axis=0)
+            mask = (ref_cluster_ids == unique_ids[:, None]).any(axis=0)
             logger.info(f"Using the following clusters: {unique_ids}")
         distances = self.measure_distance(X, dataset)
         # exclude molecules that are in both the dataset and inventory and merge

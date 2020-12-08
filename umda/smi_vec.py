@@ -41,13 +41,22 @@ def load_model(filepath: str):
     return word2vec.Word2Vec.load(filepath)
 
 
-def parallel_smi_vectorization(smiles: List[str], model, h5_file, workers: int = 4, vec_length: int = 300, radius: int = 1):
+def parallel_smi_vectorization(
+    smiles: List[str],
+    model,
+    h5_file,
+    workers: int = 4,
+    vec_length: int = 300,
+    radius: int = 1,
+):
     """
     This uses threading to perform the embedding and save it to the HDF5 dataset.
     Unfortunately, not appreciably faster, probably because you have to pickle the
     model and we're I/O limited.
     """
-    vectors = Parallel(n_jobs=workers)(delayed(smi_to_vector)(smi, model, radius) for smi in tqdm(smiles))
+    vectors = Parallel(n_jobs=workers)(
+        delayed(smi_to_vector)(smi, model, radius) for smi in tqdm(smiles)
+    )
     h5_file["vectors"] = vectors
     dt = h5py.string_dtype()
     smiles = h5_file.create_dataset("smiles", (len(smiles),), dtype=dt)
