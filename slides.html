@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <title>ACS Astrocheminar 2020</title>
+    <link rel="shortcut icon" href="./favicon.ico"/>
+    <link rel="stylesheet" href="./dist/reveal.css" />
+    <link rel="stylesheet" href="_assets/css/nyt.css" id="theme" />
+    <link rel="stylesheet" href="./css/highlight/solarized-light.css" />
+
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides"><section  data-markdown><script type="text/template">
+
+
+<div class="l-double">
+    <div>
+        <h1> Astrochemical Forecasting with Machine Learning </h1>
+        <h3> Kelvin Lee </h3>
+    </div>
+    <figure style="display: grid; grid-template-columns: 1fr 1fr; padding-top: 10rem">
+        <img src="figures/mit-logo.png" width=30%>
+        <img src="figures/cfa-logo-transparent.png" width=30%>
+    </figure>
+</div>
+</script></section><section  data-markdown><script type="text/template">
+<div class="l-double">
+    <div>
+        <h1>Summer Research @ CfA</h1>
+        <p>Jacqueline Patterson</p>
+        <i>Indiana University</i>
+    </div>
+    <figure>
+        <img src="figures/jacqueline-patterson.png" style="border-radius: 50%; width:70%">
+    </figure>
+</div>
+
+<footer style="padding-top: -50px">
+    <img class="fragment" style="width: 200px; border-radius: 50%" src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxISEhUQEhIVFRUVFRUVFRUVFQ8VFRUVFRUXFhUVFRUYHSggGBolGxUVITEhJSkrLi4uFx8zODMtNygtLisBCgoKDg0OFxAQFy0dHx0tLS0rLS0tLS0rLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLSstLS0tLS0rLf/AABEIANwA3AMBIgACEQEDEQH/xAAbAAACAwEBAQAAAAAAAAAAAAACAwEEBQYAB//EADkQAAIBAgUCAwYEBAYDAAAAAAABAgMRBAUSITFBUQZhcRMigZGhsTLB0fAHFELhFSNSYpLxcoLi/8QAGAEAAwEBAAAAAAAAAAAAAAAAAAECAwT/xAAeEQEBAAIDAQEBAQAAAAAAAAAAAQIRAxIxIUEiUf/aAAwDAQACEQMRAD8A+fINIGIcUcldMSkSSkTYkyZCpIfJCnEqJr1OJYTSV2VJ4iMdr7lWjiXUla+nt2KmO02tV4iN7fUW8WuivvYpTqKLtfcbCSSff98F9IWzU5Sbvshkem5n1MY/yIo4rYeg0bHq8bb3t8yvGvtfr0J/nHa1k/1DQ2KnVTsE4HqEVzbd+f6DqlJrfbv1/Mjqe1WdMW4D1v0JcCbNGSohpB6T1hGghhMEQQyGSQxgEmLcgpiZMZJcgdQDZ4ehtrRiMUSIIakSpCR5oM8xApoq4qsoq7Y/FTai2jn8ZUlKW/8A2XjjtNplWqtL2u2+nPqOwVGyve/k3YqYaDk+q/fYtYpOKtqb9UaoO0JXl9H59h04LS3q6X3+pUoLVC30PRoSb7Jt/KwwVGm5Nu+yJ/l5W6WLHtIwWlb92DqTV9/RP9ORAOHbfov3sHSpX1tLizX2AhWWzWy7db9izSqbWW3d+X6gEYSu0t07+ZZdduO6v5XZLgmuLLz5fr5eQqrUimtTsuv5E1RuHqre62+JEq61bfHkXCrGVrbLp5jK9O9rfawAd0C2RCLS3BkzK+qebB1AykBqDQNuC2BqIbGETYqQcgBkhRCUAooNIA34ZcyJ4Ro67+WViliqKDqjs5hxsQzSxFFGXimopsnS5Wbi8am9K+Il2t5+fQCeHe7RRq1Xfs+5tJpLTw9K3vOz69H8itjXq3QqlUa779ixSoTb92X76gFRyasy5Ktfbyv+ZMqXvJVOO66DY4W220kuGnaXyvuGxounTT3sOUbS0pu3ay6lmkrLblcruu6LmGwd9+V5fvZitVIwMVT0vbmTvfsltt8x2Hpu3G31fqatfL27bbfIsUcvfFhWn1ZF2972XZbfOwLwyklq3s7pcfM6GOWPlQtfrvcTjsra5+HIpTuLE9lNO8l6WVtuln/csRmn5N/Fj3Nx20v7grfnn0SKtToNktr3+YibLNRWdivURnkcKkBYa0QoiMFiLDdJ7SGyIkgB8ogSiMi0w1IBomww7+WbbclWrmSZzKxbFvEM0Zab1TEXMzH2adyvHEEVlqQrDijDEu1tvirlSvFvf7Dq0LOwmzbt+9ijPwWGb3sXak5RVunyLeV0lYs4jCalYitJGJHDOV2v7DqGHm+nBt5bgLbNGxh8sXYSurmcLSaabWx1OV4TU0ktufh5ss08pS4Rt4HD2VrWEuQmOVKStYb/AIXb9o2KSsGwpyMGOCtwkU8xyzXFuOz7dzp3BMRUopk09PlOMThK0kKp4m3C+x1fiXLd7nLTpabpbDZVXnK7AkNlzcVNBakJ655g3EB3JQKDQjBJASiP0kOIyVXAjQWXAjSPZaU41A9RWixiZqzOuMhMQmGhGpYqpuyMM/qTj6bvdA0e4/wOiy/g1ow3MfLpbG3Re1yK1xX8Ika+G4MamjSwyYmsasEi5SKNBbF2l2Az02MR6ERyiLR7JueY2VICUGibsSxkZ3Q1R4Pn+Phv+9z6diKd1Y+f55h3GbFKjKMCpzxsLkjTjg1NOfRJv42ukbmSeDfaUfa1pum2vcSS27OV/sWiY2+OOaBaLWJw7hOUHzGTi/g7CHESQJhJkNEJgDUyGyLkNiDzZFwZMG4woQQbQunIOUjVmlMYmV9QcJgDa0dUWviUlNbpcK30NChBydlyZ2Ow7hNxa/6Yw1Mtr72OlwU9jissqe+dflk0k2ybGmNbmGRq0LIwJ5pCEb/YVT8QRfS1hNJXY4eoiw6iVmcrhM2Uups4arrWxNyXPq9LMox5ZSr+J6a4ZRxOG5TeyOexuOhB6adNSfS77Ed934dx1HWUfE+rY0MPm6ez38z5zhfEFW/u0FL0ujo8tzmMtqlOVJ/7ls/RjyuU9Tjq+V2KafD5OX8WUEmm+v0NvBV4vh3F+IMH7Wk7croLGnlLpl+GIR9k5WW76+RpYiu5wdr2jvbvYy8PGdPBpxXvJyWy4957v4FvK8fKUoxe9/IV+tePxyPibCqNXXH8NRKa8m/xL53+ZjuJ0Pi6ovaxpriEbfN3+1jCcSnNya7XSvKItlmURUojZktg6g5oXYYebBCse0AGOqhKqhYih1K6NdMz9YyEisNpgF/C1dMky7mMFUVmveS2fdGZA3MvSnFN8pWf5E1phfyubwacaiv3Oip6m7LhGdj6SVVM3Msoyk2k7fP7Blfh4zV0p18RCm/eTlN9F+fYrPFVpK8aSiunuu/zex0tLJbPXbU292y5/h9R7WUV5ImaXZXJ0a9XVbS/XZHeeDamraRmVMuUVdou+G6rhV8mPUVNt3N8He6WxyqyhKTajd9W+f7HfYmnqELDrqiZNVo57B0ZR4ppefJsYXLNW8op/v0LkKKuaVCKtsHVNVqeHUVZRt8gasdrd0aDjcq4pWTIs0Ns/Io2Uk1/W7X7WX53Dw+XRUpV4Ws7qKtx3YzDK3zCzzFqjh5zVlpg0vV7L6srEb0+X51U1V6jXGuSXonZfYpMiUgXITGvMVIlyFykNIZAWGWCjEYLUCdA5RJ0i2GXXiZ1SG5dc7leaN2RNhsInlEZGIGZBF/Lq2iXkynBDYoR700szw2pa0uN13T6ov5Q+GutheW1dcXF9rfLgZhPdenzJrXe/rr8Bwi84LkxMFidjQ/mdid6bY/VDNqttvoFlFG8lIzM0xL1alwhGWZx7Opa9138/UNjX19PpxTir8iKtOVm4sw8NmjcW1dsVQx2IvaTjbsk/u2Tct/i5j+7XFmyvaWzReo4xPqYeKwV1f6lKliZUnZ7ruK2xXx2sMQDiauqLMrC1nJJlqlK5n23U2MzxFmssPTi421Slbfta7/fmcnnHiOriIezaUY8tLe9uLmn46lvSj5Tf2/Q5Rotjcr4FsBsmQDY0IbAbCYLGSUw0xR64EsKR7UJ1HrgbGgw7AQQ5I3YwKiGkeQSAxRQ1C4jUgB2HrODuizTxLcrsooZTJpy10OHrl6eJaiY2GleN+xu0sOpwjJdjGurCs+rurPqUqeA34K2PzKpTq+y0W3sm9k/Q1MLRrTUWrb368PtwaXWi208BGUVZJs2sLBLeckvjuUMvyirKCm5bu1023s+Tc/wSlFx1y2aas3ZN8/a5Hniu2P7SMTmdCC3l9GY+HzWhiZShSvLT+K6ate/f0L2OVOUFRpR1S9+D2to22ck+jHZPkUMPC0V70venLq2/wAg1bN09/4dldLTTSfR2L1MGlGySPTnYxnqq5Hxo71Yf+P5s5uSOl8Xx96nLupL5Nfqc5I1c+XpEkKaHyFtARdj2kYok6RkS0A0WHEBxAEk3CcSLAbJihqAQZuxeCiDcKIyNiMSFwGoVDxMGBKQMZCNq5fW0ys+GdHk1WylSfrH0OSpbmrgsW4tPrHnzRnlG2GTTzTDQqK04plPD0akWlGo7J3Sv325NLE72a4YqnHezKl+NJr9bOFr1VHSlK2lJWa5XHvcvoXP8ybtN2ja27u/OyMqhJx6v5sv4etd8X+Yv5aTHFr4aglbSrLr3fxHVBeGuyy4W5Jzy2KrTZVqSu7IPE1gcLHe7MIKrZ1kv8xGMVOMZRu46r2d+l+hw+Z4CpQn7OrFwb4v+GS7xlwz6LmSfs5OO7Sul6blHJYrM8NXwzs3GDlTb5hUX4bPpfhnZxY45TVjm5dz+pXzxxI0kYGo5aqc1acG4tPlNbNMY1Yjk4+lThn2DpPNEkNkKC0AwmwZAZchbGtC2gDKJZ5I8zdjAthwYphRYBZgxtyvBjHIVCJyBjIGbIgwDQw7LzjtdcozcPI0YVEld8JE5KxXsqzBNaJfA6DBOLRwkLp3WzNnLsya9RNca7zC4ZNcIt0oRT4XrsYGX5rsPeY79w7Rs6anViVsfi0lsY6zG4ym9TuzPLLY0OMbu7LeHEyVkNpEyBbgXvAGSxoPE1Yq3tKll6RXT4yZSpnZZbR0Uox62u/V7s6uCfdufnusdPlH8SfD0aGLWKp7KuvfXT2kf6l6pnIyimfSv4tS92gv90n8kv1Pmqe51ZyX1x43RM4WFsu+QidDscmfDZ46MeWX1XYLGTptcoWzGzTQDAYbAAMxESJR5nQwhTQUUS0ShVQokuRAEmI3pM9EBJt7DvZ25HJsrTaMg62IvaC6tJ/FlWVQS52afZ3+RfVO3S5pQ0VpLps18UinUTTujezyGuNKsltKKTfna5lOFzPkmsq2wu4ZhcdNbavojVo12+phxia2WyTWl8mVjXGtzL43NqlZFHAU7QRbpsjTRYcxlGVypUlYKjVbahBXk3ZJFSWltv5PQ9pUjHpH3pei4Xxf5nYajKyjBexp6eZy3m/PsvJFypOyud/Hh1mnBy59q+b/AMWMWpVqVNf0wcn/AOz/APk4JM2PFWN9ti6s77KWlekdvvcyEi8vWUFc9NnmQwCVMiUIvlCKcug5SFZKe7CZ4VPhiJYWXYuo9rMrw41c5co5hE3ARJnVRLZFyB8MN1ewSbO0pDY0P9Q3UlwLlMuYJuQkkuEKqscivVZaSGwLXCkepok30Lw1KNXDqlPdOO3k1sUsXgnTk4S+D7ruL8J1L07dYyf13Ou9lCtHRUXo+qfkyssO0PDPrXEzpWZYwsbNM08wySrT3S9pDvHleq/QqUKZzXGz10TKXxuYbE3SNCjIw6MrFpYptqEFeT2SImP1pcl3E1rtRim5PZJctnZeGcm9ivaT3qNf8V2X6lHw5k6p/wCZPeb69vJHU0onbx8XX7fXJycu/kNRWzapopTm+kW/ki2nY53x7jNGDq92tP8AydvzNcfWNfG5SvJy6ttslMUiU+vUgGMFM9rK+KxUaavJ+i6v0Gaauz9QoTKNLETn70lpX9K6+rHxYgt3BuLjIkZOdgOp078h4OCs2BKRhMWtp2qK4QqdS4tshlpFchshEvgA9rK6nZ2YxHtIGW0TEKREUIOl8IVPenHuk/kd1hT554ZlavHzTR9Cwhrj4mtnDbg4rIadXdq0u62Z7Bs05/gt3aT72fNi+svpbscTXyd6nGFZNJ2b0Sdn68M6Lw/kUKW/4pPmb6+S7IvTyula1nx3Yzw87SnS/pjZx7q99vQmY4y+Hc7Z63MLTLqFQiNKqENnC/xPxFsPGP8AqmvomzuJnzb+KU3/AJS6Xl9l+o55R+uDTAuSDIyUKcrrZ2fR8/MrU8Ek9U/el3f5Bplim77ACakRY+XVCJfmASmEpC0SwD//2Q==">
+</footer>
+</script></section><section ><section data-markdown><script type="text/template"><!-- .slide: data-auto-animate -->
+
+<div class="l-double">
+    <div style="padding-top: 50px"><h1>Contents</h1></div>
+    <ul class="timeline">
+        <li>Introduction</li>
+    </ul>
+</div>
+</script></section><section data-markdown><script type="text/template"><!-- .slide: data-auto-animate -->
+
+<div class="l-double" data-auto-animate>
+    <div style="padding-top: 50px"><h1>Contents</h1></div>
+    <ul class="timeline">
+        <li>Introduction</li>
+        <li>Machine Representations of Molecules</li>
+    </ul>
+</div>
+</script></section><section data-markdown><script type="text/template"><!-- .slide: data-auto-animate -->
+
+<div class="l-double" data-auto-animate>
+    <div style="padding-top: 50px"><h1>Contents</h1></div>
+    <ul class="timeline">
+        <li>Introduction</li>
+        <li>Machine Representations of Molecules</li>
+        <li>Astrochemical Forecasting</li>
+    </ul>
+</div>
+</script></section></section><section ><section data-markdown><script type="text/template">
+<div>
+
+<p class="center-title">Introduction</p>
+
+</div>
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div style="padding-top: 200px">
+        <h1>Molecules in Space</h1>
+        <p class="fragment" style="padding-top: 50px">Every molecule tells a different story!</p>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr">
+        <figure>
+            <img src="figures/Glycine.png">
+            <figcaption>Prebiotic chemistry</figcaption>
+        </figure>
+        <figure>
+            <img src="figures/dustimage.jpg">
+            <figcaption>Interstellar matter</figcaption>
+        </figure>
+        <figure style="width: 100%">
+            <img src="https://public.nrao.edu/wp-content/uploads/2009/02/imagessquared2009gbtmoleculestitles09_squared.jpg">
+            <figcaption>Material at scale</figcaption>
+        </figure>
+    </div>
+</div>
+
+<footer>Credit: Bill Saxton (NRAO)</footer>
+</script></section><section data-markdown><script type="text/template">
+<div style="display: grid; grid-template-columns: 1.5fr 1fr">
+    <div><h1 style="width: 800px; padding-top: 100px">New detections per year</h1></div>
+    <div>
+        <figure style="width: 1800px; padding-left: -150px">
+            <img src="figures/detections-by-year.svg">
+        </figure>
+    </div>
+</div>
+
+<footer style="padding-top: 100px">Source: Astrochymist</footer>
+</script></section><section data-markdown><script type="text/template">
+<div style="display: grid; grid-template-columns: 1.5fr 1fr">
+    <div><h1 style="width: 800px; padding-top: 100px">Growth in molecular complexity</h1></div>
+    <div>
+        <figure style="width: 1800px; padding-left: -150px">
+            <img src="figures/complexity-by-year.svg">
+        </figure>
+    </div>
+</div>
+
+<footer style="padding-top: 100px">Source: Astrochymist</footer>
+</script></section><section data-markdown><script type="text/template">
+<div>
+    <h1>What do we look for next?</h1>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr">
+        <figure class="fragment"><img style="border-radius: 50%" src="figures/nozzle_portrait.jpg"><figcaption>Laboratory assays</figcaption></figure>
+        <figure class="fragment"><img src="https://s3.amazonaws.com/images.spaceref.com/news/2020/oochempl.jpg"><figcaption>Chemical models</figcaption></figure>
+        <figure class="fragment" style="padding-top: 60px"><img src="https://vignette.wikia.nocookie.net/furthestextreme/images/f/f6/Cropped-big-brain.jpg/revision/latest/scale-to-width-down/340?cb=20190929085659" style="border-radius: 50%"><figcaption>Chemical intuition</figcaption></figure>
+    </div>
+</div>
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div>
+        <h1>Laboratory assays</h1>
+        <p style="padding-top: 50px">Unbiased discharge chemistry; what you see is what you get.</p>
+        <p class="fragment">Related chemistry dictates targets.</p>
+        <p class="fragment">Extensive work needed to identify unknowns. 🚧 </p>
+    </div>
+    <div>
+        <figure>
+            <img src="figures/complex_mixture_separation.svg" style="width: 1400px">
+            <figcaption>Plethora of transient molecules from overnight acquisition</figcaption>
+        </figure>
+    </div>
+</div>
+
+<footer style="padding-top: 100px">McCarthy+2020, Lee & McCarthy 2019</footer>
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div>
+        <h1>
+            Chemical models
+        </h1>
+        <p style="padding-top: 50px">Chemistry driven by kinetics</p>
+        <p class="fragment">Quantitative relationships through network analysis.</p>
+        <p class="fragment">Needs <i>a priori</i> knowledge of rates, which reactions, and which molecules. 🤯  </p>
+    </div>
+    <div>
+        <figure>
+            <img src="figures/aromatic-model-production.svg">
+            <figcaption>Models unable to reproduce targets</figcaption>
+        </figure>
+    </div>
+</div>
+
+<footer style="padding-top: 100px">McGuire+2020</footer>
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div>
+        <h1>
+            Chemical intuition
+        </h1>
+        <p style="padding-top: 50px">Draw on abstract understanding of chemistry.</p>
+        <p class="fragment">Heuristics from context, knowledge, and experience.</p>
+        <p class="fragment">Arbitrary, difficult to scale and apply. 🤯</p>
+    </div>
+    <div>
+        <figure style="padding-top: 200px">
+            <img src="https://media.cheggcdn.com/media%2F821%2F8219c9bd-261f-40ff-8c6a-42100347915e%2Fimage.png">
+        </figure>
+    </div>
+</div>
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div style="padding-right: 100px">
+        <p>There is a need for us to become <i>predictive</i>.</p>
+        <p style="line-height: 1.4em;" class="fragment" data-fragment-index="2">
+            As we progress in molecular complexity, human intuition alone cannot cover all of phase space.
+        </p>
+    </div>
+    <div>
+        <embed src="figures/models-vs-molecules.gif" class="fragment" data-fragment-index="1">
+    </div>
+</div>
+</script></section><section data-markdown><script type="text/template">
+# What do we need?
+
+<ul style="display: grid; grid-template-columns: 1fr 1fr 1fr; padding-top: 50px">
+    <li class="fragment">Systematic prediction and improvement</li>
+    <li class="fragment">Effective <i>a priori</i>; few to no assumptions and parameters</li>
+    <li class="fragment">Reliable with uncertainty</li>
+</ul>
+</script></section><section data-markdown><script type="text/template">
+<div style="display: grid; grid-template-columns: 1fr">
+    <figure>
+        <img src="figures/recommender.svg" style="width: 1200px">
+    </figure>
+    <figure class="fragment">
+        <img src="figures/mrs.svg" style="width: 1200px">
+    </figure>
+</div>
+
+</script></section></section><section ><section data-markdown><script type="text/template">
+<div>
+    <p class="center-title">Machine Representations of Molecules</p>
+</div>
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div>
+        <h1>Machine learning of molecules</h1>
+        <ul>
+            <li>Vector representations of molecules that capture chemistry.</li>
+            <li>Relate chemical similarity to observable properties.</li>
+        </ul>
+    </div>
+    <div>
+        <figure><img src="figures/Pyridine.png" alt=""></figure>
+    </div>
+</div>
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div>
+        <h1>Cheminformatics</h1>
+        <ul>
+            <li>High-throughput drug and materials discovery.</li>
+            <li>Screen <i>millions</i> of molecules for favorable properties.</li>
+            <li>Variety of descriptors for different purposes.</li>
+        </ul>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; align-items: center;">
+        <figure><img src="figures/smiles-demo.png"><figcaption>SMILES strings</figcaption></figure>
+        <figure><img src="figures/xyz-demo.png" alt=""><figcaption>XYZ coordinates</figcaption></figure>
+        <figure><img src="" alt=""></figure>
+    </div>
+</div>
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div>
+        <h2>Supervised featurization</h2>
+        <ul>
+            <li class="fragment">Three double bonds</li>
+            <li class="fragment">Five aromatic carbon, one aromatic nitrogen</li>
+            <li class="fragment">One ring</li>
+            <li class="fragment"><code>[3,5,1,1]</code></li>
+        </ul>
+        <p class="fragment">Scales poorly, limited in description, and arbitrary!</p>
+    </div>
+    <div>
+        <figure>
+            <img src="figures/Pyridine.png">
+        </figure>
+    </div>
+</div>
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div>
+        <h2>Unsupervised featurization</h2>
+        <p style="padding-top: 50px">
+            Algorithm infers chemical descriptions from dataset patterns.
+        </p>
+        <ul class="fragment">
+            <li>Many-to-one: predict the missing atom</li>
+            <li>One-to-many: complete the molecule given an atom</li>
+        </ul>
+        <i class="fragment">Parallels with natural language models!</i>
+    </div>
+    <div>
+        <figure>
+            <img src="https://www.chess.com/bundles/web/images/web/board-puzzles.600ddf36.png">
+        </figure>
+    </div>
+</div>
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div>
+        <h1 style="padding-bottom: 50px">Unsupervised featurization</h1>
+        <p style="padding-bottom: 50px">Sally likes to _______ in summer.</p>
+        <h2>Words in Sentences</h2>
+    </div>
+    <div style="padding-top: 150px">
+        <figure style="width: 600px">
+            <img src="figures/mol2vec-corpus.svg">
+            <figcaption>Atoms in Molecules</figcaption>
+        </figure>
+    </div>
+</div>
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div>
+        <figure style="width: 350px">
+            <img src="figures/word-model.svg">
+            <figcaption>Word2Vec; Mikolov+2013</figcaption>
+        </figure>
+    </div>
+    <div class="fragment">
+        <figure style="width: 300px">
+            <img src="figures/mol-model.svg">
+            <figcaption>Mol2Vec; Jaeger+2018</figcaption>
+        </figure>
+    </div>
+</div>
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div>
+        <h1>Datasets</h1>
+        <p style="padding-top: 50px">
+            Use public databases to train Mol2Vec embedding model.
+        </p>
+        <p class="fragment">Model produces 300 dimension vectors unique to each molecule.</p>
+        <p class="fragment">36,399 unique atom environments for $r=1$.</p>
+    </div>
+    <div>
+        <ul>
+            <li>QM9 (133,885)</li>
+            <li>ZINC5 (3,862,980)</li>
+            <li>KIDA (578)</li>
+            <li>TMC-1 inventory from GOTHAM (112)</li>
+        </ul>
+        <p><i>Without duplication*:</i> 3,857,766 unique molecules</p>
+    </div>
+</div>
+
+<footer style="padding-top: 100px">*Based on canonical SMILES</footer>
+</script></section><section data-markdown><script type="text/template">
+<figure>
+    <img src="figures/umap_tmc1_viz_alllabel.png" style="width: 1200px">
+    <figcaption>UMAP visualization of TMC-1 chemical inventory; 300-D to 2-D</figcaption>
+</figure>
+</script></section><section data-markdown><script type="text/template">
+<figure>
+    <img src="figures/umap_all_mols.svg" style="width: 1400px">
+    <figcaption>UMAP visualization of dataset vs. TMC-1</figcaption>
+</figure>
+</script></section></section><section ><section data-markdown><script type="text/template">
+<div>
+    <p class="center-title">Astrochemical Forecasting</p>
+</div>
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div>
+        <h1>
+            Unsupervised Regression
+        </h1>
+        <p>
+            Apply proof-of-concept to TMC-1 chemical inventory
+        </p>
+        <p>
+            NumPy, SciPy, scikit-learn, dask, dask-ml
+        </p>
+        <p>10-fold cross-validation for model selection</p>
+    </div>
+    <div>
+        <ul>
+            <li>Linear regression</li>
+            <li>Support vector machines</li>
+            <br/>
+            <li><i>k</i>-nearest neighbors</li>
+            <li>Random forest</li>
+            <li>Gradient boosting</li>
+            <li>Gaussian process</li>
+        </ul>
+    </div>
+</div>
+</script></section><section data-markdown><script type="text/template">
+<figure style="padding-top: 100px">
+    <img src="figures/pipeline.svg" style="width: 1400px">
+    <figcaption>Unsupervised regression pipeline</figcaption>
+</figure>
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div>
+        <h1>Model training</h1>
+        <p style="padding-top: 100px">Train on TMC-1 inventory, not including isotopologues.</p>
+        <p>Include negative examples to constrain impossible molecules.</p>
+    </div>
+    <div>
+        <figure class="fragment">
+            <img src="figures/zero-columns.svg" style="width: 800px">
+        </figure>
+    </div>
+</div>
+</script></section><section data-markdown><script type="text/template">
+# Performance
+
+| Method | MSE (log $N_\mathrm{col}$) | Masked MSE (log $N_\mathrm{col}$) |
+|--------|:--------------------------:|:---------------------------------:|
+| Linear regression | 0.651 | 1.691 |
+| SVM | 0.761 | 2.540 |
+| $k$NN | 0.564 | 1.900 |
+| Random forest | 0.108 | 0.364 |
+| <hr> | <hr> | <hr> |
+| Gradient boosting | 0.004 | 0.014 |
+| Gaussian process | 0.023 | 0.073 |
+
+Shown as best model performance on validation set following 10-fold cross-validation
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div>
+        <h1>Specific Targets</h1>
+        <p>Predict column densities of specific molecules.</p>
+        <p>Validation using cyanopolyynes—captures qualitative trends!</p>
+    </div>
+    <div>
+        <figure style="width: 110%">
+            <img src="figures/cyanopolyyne_validation.png">
+            <figcaption>Gaussian Process</figcaption>
+        </figure>
+    </div>
+</div>
+
+<footer style="padding-top: 100px">Loomis+2020</footer>
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div>
+        <h1>Global Predictions</h1>
+        <p>Predict column densities for entire database.</p>
+        <p>Identify next targets for study!</p>
+        <ul>
+            <li>Column densities for the radio-invisible</li>
+            <li>Surprisal analysis</li>
+        </ul>
+    </div>
+    <div>
+        <figure style="width: 110%">
+            <img src="figures/example-predictions.png">
+            <figcaption>Gaussian Process</figcaption>
+        </figure>
+    </div>
+</div>
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div>
+        <h1>Understanding networks</h1>
+        <p style="padding-top: 50px">Gaussian process directly models covariance between molecules.</p>
+        <p>Proposes targets for chemical models, laboratory, observations, and quantum chemistry!</p>
+    </div>
+    <div>
+        <figure>
+            <img src="figures/gp_tmc1_covariance.svg" style="width: 900px">
+        </figure>
+    </div>
+</div>
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div><h2>Advantages</h2>
+        <ul>
+            <li>Non-parametric baseline from chemical similarity</li>
+            <li>Very scalable; from laptop to cluster, unsupervised, and fast(?)</li>
+            <li>Systematically improved with new data</li>
+        </ul>
+    </div>
+    <div><h2>Disadvantages</h2>
+        <ul>
+            <li>Database dependent</li>
+            <li>Not readily interpretable</li>
+            <li>Improvement to models non-trivial</li>
+        </ul>
+    </div>
+</div>
+</script></section></section><section ><section data-markdown><script type="text/template">
+<div class="l-double">
+    <div style="padding-top: 100px">
+        <h1>Take-home messages</h1>
+    </div>
+    <div style="margin-left: -250px">
+        <ul>
+            <li>Drive new discoveries with predictive <i>a priori</i> model.</li>
+            <li class="fragment">Complimentary to observations, models, and laboratory studies.</li>
+            <li class="fragment">Can be systematically and readily improved with new data.</li>
+            <li class="fragment">Object-oriented Python API for public consumption.</li>
+        </ul>
+    </div>
+</div>
+
+<footer style="padding-top: 100px">https://github.com/laserkelvin/umda</footer>
+</script></section><section data-markdown><script type="text/template">
+# Acknowledgements
+
+<div style="display: grid; grid-template-columns: 1fr 1fr 1fr">
+    <figure>
+        <img src="figures/gbt_image.jpg" style="border-radius: 50%;">
+    </figure>
+    <figure>
+        <img src="figures/nasa.png" style="width: 80%">
+    </figure>
+    <figure>
+        <img src="figures/nsf.png" style="width: 70%">
+    </figure>
+</div>
+</script></section><section data-markdown><script type="text/template">
+<div class="l-double" style="padding-top: -200px">
+    <figure>
+        <img src="figures/group2017.JPG" style="border-radius: 70%; max-height: 400px; width: auto">
+    </figure>
+    <figure>
+        <img src="figures/group2018.jpg" style="border-radius: 70%; max-height: 400px; width: auto">
+    </figure>
+    <figure>
+        <img src="figures/isms_2019.jpg" style="border-radius: 70%; max-height: 400px; width: auto">
+    </figure>
+    <figure>
+        <img src="figures/gotham_2019_photo.jpg" style="border-radius: 70%; max-height: 400px; width: auto">
+    </figure>
+</div>
+</script></section></section><section  data-markdown><script type="text/template">
+<div class="grid sidebar">
+    <h1> Thank you! </h1>
+</div>
+
+<div class="l-multiple">
+    <div class="img-frame">
+        <img src="figures/twitter.png" class="end-icons">
+        <span>@cmmmsubmm</span>
+    </div>
+    <div class="img-frame">
+        <img src="figures/www.png" class="end-icons">
+        <span>laserkelvin.github.io</span>
+    </div>
+    <div class="img-frame">
+      <img src="figures/Octocat.png" class="end-icons">
+      <span>@laserkelvin</span>
+    </div>
+</div>
+
+<footer>
+
+Copyright © 2020 Kelvin Lee
+
+</footer>
+</script></section></div>
+    </div>
+
+    <script src="./dist/reveal.js"></script>
+
+    <script src="./plugin/markdown/markdown.js"></script>
+    <script src="./plugin/highlight/highlight.js"></script>
+    <script src="./plugin/zoom/zoom.js"></script>
+    <script src="./plugin/notes/notes.js"></script>
+    <script src="./plugin/math/math.js"></script>
+    <script>
+      function extend() {
+        var target = {};
+        for (var i = 0; i < arguments.length; i++) {
+          var source = arguments[i];
+          for (var key in source) {
+            if (source.hasOwnProperty(key)) {
+              target[key] = source[key];
+            }
+          }
+        }
+        return target;
+      }
+
+      // default options to init reveal.js
+      var defaultOptions = {
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+        transition: 'default', // none/fade/slide/convex/concave/zoom
+        plugins: [
+          RevealMarkdown,
+          RevealHighlight,
+          RevealZoom,
+          RevealNotes,
+          RevealMath
+        ]
+      };
+
+      // options from URL query string
+      var queryOptions = Reveal().getQueryHash() || {};
+
+      var options = extend(defaultOptions, {"transition":"fade","transition-speed":"fast","width":"100%","height":"100%","center":true,"margin":0,"minScale":1,"maxScale":1,"symbolperslideprogress":{"position":"left","align":"vertical","symbolColor":"","symbolActiveColor":""},"menu":{"side":"left","width":"normal"},"tableofcontents":{"title":"","position":2,"titleTag":"h1","titleTagSelector":"h1, h2, h3","ignoreFirstSlide":true}}, queryOptions);
+    </script>
+
+    <script src="./_assets/js/menu.js"></script>
+    <script src="./_assets/js/tableofcontents.js"></script>
+
+    <script>
+      Reveal.initialize(options);
+    </script>
+  </body>
+</html>

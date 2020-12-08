@@ -1,0 +1,55 @@
+
+@import "chique.css";
+
+
+/*  The color palette for this color scheme consists of three colors:
+
+    black: #000 for text
+    gray: #ddded9 for borders and underscoring
+    pink: #eddacc for backgrounds
+*/
+
+body {
+    color: #fff;
+    background-color: rgb(80, 80, 80);
+}
+
+html {
+    font-family: "Playfair Display";
+    background-clip: text;
+    -webkit-background-clip: text;
+    background-color: #000;
+}
+
+ul {
+    color: #000;
+    background: rgba(237, 218, 204, 0.4);
+    max-width: 80%;
+}
+
+a {
+    color: #eddacc;
+    /* border-bottom: 3px solid #eddacc; */
+    transition: all 0.25s linear;
+    position: relative;
+    text-decoration: none;
+}
+
+a:before {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 3px;
+    background-color: #61a3ff;
+    position: absolute;
+    left: 0;
+    bottom: -3px; /* this is to match where the border is */
+    transform-origin: left; 
+    transform: scale(0);
+    transition: 0.25s linear;
+  /*   will-change: transform; */
+}
+
+a:hover:before {
+    transform: scale(1);
+  }

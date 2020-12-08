@@ -1,0 +1,69 @@
+
+@import "elegant.css";
+
+@import url('https://fonts.googleapis.com/css2?family=Work+Sans|Raleway|Dancing+Script&display=swap');
+
+
+/*  The color palette for this color scheme consists of three colors:
+
+    black: #000 for text
+    gray: #ddded9 for borders and underscoring
+    pink: #eddacc for backgrounds
+*/
+
+body {
+    background-color: #f9efde;
+}
+
+html {
+    font-family: "Raleway";
+    color: #8b8378;
+}
+
+h1, h2 {
+    letter-spacing: 1.7px;
+    font-family: "Work Sans";
+    font-weight: 700;
+}
+
+h3 {
+    font-size: 1.3rem
+}
+
+.handwrite {
+    font-family: "Dancing Script";
+    font-weight: 700;
+}
+
+h1::after {
+    content: "";
+    border-bottom: 5px solid #bc5e21;
+    width: 50%;
+    /* margin: 0 auto; */
+    display: block;
+    padding-top: 20px;
+}
+
+.reveal ul {
+    background-color: #bc5e21;
+    /* max-width: 40%; */
+    padding-bottom: 10px;
+    padding-top: 10px;
+}
+
+.reveal li {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.reveal .hljs {
+    font-family: "Space Mono";
+}
+
+.inverted {
+    filter: invert(100%);
+}
+
+.reveal ol {
+    font-size: 1.3rem
+}

@@ -1,0 +1,33 @@
+
+@import "elegant.css";
+
+@import url('https://fonts.googleapis.com/css?family=Poppins|Roboto|IBM+Plex+Sans|PT+Mono&display=swap');
+
+body {
+    background-color: #f3e79b;
+}
+
+h1, h2, h3, h4 {
+    color: #ce6693;
+    font-family: "Poppins";
+}
+
+p, ul, ol, li, span {
+    color: #5c53a5;
+    font-family: "IBM Plex Sans";
+    font-size: 2.3vw;
+}
+
+.reveal .hljs {
+    font-family: "PT Mono";
+}
+
+
+h1::after {
+    content: "";
+    border-bottom: 5px solid #eb7f86;
+    width: 50%;
+    /* margin: 0 auto; */
+    display: block;
+    padding-top: 20px;
+}
