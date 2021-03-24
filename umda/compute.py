@@ -4,12 +4,46 @@ from dask import array as da
 
 
 @numba.njit(fastmath=True)
-def cosine_similarity(A, B):
+def cosine_similarity(A: np.ndarray, B: np.ndarray) -> float:
+    """
+    Compute the cosine angle between two vectors. This yields a
+    similarity metric spanning [-1,1], corresponding to (anti)aligned
+    vectors.
+    
+    This is used primarily as a metric for validating the embeddings
+    via molecule arithmetic: check stuff like the similarity scores
+    between cyanopolyynes, and reactions like phenyl + cn = benzonitrile.
+
+    Parameters
+    ----------
+    A, B : np.ndarray
+        NumPy 1D arrays, typically for the embeddings
+
+    Returns
+    -------
+    float
+        Cosine similarity between A and B
+    """
     return np.dot(A, B) / (np.linalg.norm(A) * np.linalg.norm(B))
 
 
 @numba.njit(fastmath=True)
-def pairwise_similarity(vectors):
+def pairwise_similarity(vectors: np.ndarray) -> np.ndarray:
+    """
+    Pairwise cosine similarity function.
+
+    Parameters
+    ----------
+    vectors : np.ndarray
+        NumPy 2D array with dimensions [n_samples, n_features].
+
+    Returns
+    -------
+    np.ndarray
+        NumPy 2D array, with each element corresponding to
+        the cosine similarity between two rows of the input
+        vectors.
+    """
     n = len(vectors)
     matrix = np.zeros((n, n), dtype=np.float32)
     for i in range(n):
