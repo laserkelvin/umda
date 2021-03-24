@@ -54,13 +54,13 @@ def parallel_smi_vectorization(
     Unfortunately, not appreciably faster, probably because you have to pickle the
     model and we're I/O limited.
     """
-    vectors = Parallel(n_jobs=workers)(
+    vectors = Parallel(n_jobs=workers, prefer="threads")(
         delayed(smi_to_vector)(smi, model, radius) for smi in tqdm(smiles)
     )
-    h5_file["vectors"] = vectors
+    h5_file["vectors"] = np.vstack(vectors)
     dt = h5py.string_dtype()
-    smiles = h5_file.create_dataset("smiles", (len(smiles),), dtype=dt)
-    h5_file["smiles"] = smiles
+    smiles = h5_file.create_dataset("smiles", (len(smiles),), dtype=dt, data=smiles)
+#    h5_file["smiles"] = smiles
 
 
 def serial_smi_vectorization(all_smiles, model, h5_ref, vec_length=300, radius=1):
@@ -94,7 +94,7 @@ def serial_smi_vectorization(all_smiles, model, h5_ref, vec_length=300, radius=1
         smiles[index] = smi
 
 
-def canonicize_smi(smi: str):
+def canonicize_smi(smi: str) -> str:
     """
     Function to convert any SMILES string into its canonical counterpart.
     This ensures that all comparisons made subsequently are made with the

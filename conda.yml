@@ -1,4 +1,3 @@
-name: rdkit
 channels:
   - defaults
 dependencies:
@@ -75,4 +74,3 @@ dependencies:
   - black
   - ipywidgets=7.5
   - jupyterlab
-prefix: /home/kelvin/anaconda3/envs/rdkit
