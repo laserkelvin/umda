@@ -36,13 +36,12 @@ class EmbeddingModel(object):
 
     def vectorize(self, smi: str):
         vector = smi_vec.smi_to_vector(smi, self.model, self.radius)
-        # get the PCA embedding
+        # 
         if self._transform is not None:
-            model = self.transform.named_steps.get("incrementalpca", "pca")
-            new_vector = model.transform(vector)
-        else:
-            new_vector = vector
-        return new_vector
+            # the clustering is always the last step, which we ignore
+            for step in self.transform.steps[:len(self.transform.steps)-1]:
+                vector = step[1].transform(vector)
+        return vector[0]
 
     def __call__(self, smi: str):
         return self.vectorize(smi)
