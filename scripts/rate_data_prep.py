@@ -1,12 +1,12 @@
 import numpy as np
 import pandas as pd
-from subprocess import Popen, PIPE
-from tempfile import NamedTemporaryFile
 from rdkit import Chem
 from umda import EmbeddingModel
 from umda import compute
 import re
 from joblib import parallel_backend, load
+from tqdm.auto import tqdm
+import h5py
 
 
 def parse_kida_format(path: str):
@@ -68,18 +68,12 @@ def kida_to_dataframe(
     return filtered_df
 
 
-kida_mols = pd.read_csv("../../data/external/kida-molecules_05_Jul_2020.csv").dropna()
-
-
+kida_mols = pd.read_csv("../data/external/kida-molecules_05_Jul_2020.csv").dropna()
 kida_mols = kida_mols[kida_mols["InChI"] != "InChI="]
-
-
 kida_mols.reset_index(drop=True, inplace=True)
 
-
-# In[6]:
-
-
+# generate the mapping between "standard" formulae to SMILES
+# by going through InChI provided by KIDA
 mapping = dict()
 with open("kida.inchi", "w+") as durr:
     for index, row in kida_mols.iterrows():
@@ -94,174 +88,57 @@ with open("kida.inchi", "w+") as durr:
         except:
             print(f"{inchi} was untranscribable.")
 
-
-# In[7]:
-
-
+# test run to make sure the mapping works
 kida_mols["SMILES"] = kida_mols["InChI"].map(mapping)
 
-
-# ### Load in the KIDA reactions
-
-# In[8]:
-
-
-reactions = parse_kida_format("../../data/external/kida.uva.2014/kida.uva.2014.dat")
+reactions = parse_kida_format("../data/external/kida.uva.2014/kida.uva.2014.dat")
 reactions_df = kida_to_dataframe(reactions)
 
-
-# In[9]:
-
-
-# vectorize the function
+# vectorize the rate function
 compute_rate = np.vectorize(compute.compute_rate)
-
-
-# In[10]:
-
 
 # convert the standard formulae into SMILES
 reactions_df["A_smi"] = reactions_df["A"].map(mapping)
 reactions_df["B_smi"] = reactions_df["B"].map(mapping)
 
-
-# In[11]:
-
-
+# dropna removes all the molecules that do not have a valid mapping,
+# as well as generally bad rows
 valid_reactions = reactions_df.dropna()
 valid_reactions.reset_index(drop=True, inplace=True)
 
-
-# In[12]:
-
-
 # load in the EmbeddingModel class predumped
-embedder = load("../../models/EmbeddingModel.pkl")
-
+embedder = load("../models/EmbeddingModel.pkl")
 
 # ### Generate all the kinetic data, and put it into a combined table
-
-# In[19]:
-
-
+print("Generating rate coefficients")
 X, y = list(), list()
-for index, row in valid_reactions.iterrows():
+for index, row in tqdm(valid_reactions.iterrows()):
     min_temp, max_temp = row["min_temp"], row["max_temp"]
     # force the temperature ranges to be within [0, 300]
     min_temp = max(0.0, min_temp)
     max_temp = min(300.0, max_temp)
-    temperatures = np.linspace(min_temp, max_temp, 30)
-    rates = compute_rate(
-        row["react_class"], temperatures, row["alpha"], row["beta"], row["gamma"]
-    )
-    A, B = embedder.vectorize(row["A_smi"])[0], embedder.vectorize(row["B_smi"])[0]
-    for rate, temp in zip(rates, temperatures):
-        X.append(np.concatenate((A, B, [temp])))
-        y.append(rate)
+    temperatures = np.linspace(min_temp, max_temp, 50)
+    try:
+        rates = compute_rate(
+            row["react_class"], temperatures, row["alpha"], row["beta"], row["gamma"]
+        )
+        A, B = embedder.vectorize(row["A_smi"]), embedder.vectorize(row["B_smi"])
+        for rate, temp in zip(rates, temperatures):
+            X.append(np.concatenate((A, B, [temp])))
+            y.append(rate)
+    except ValueError:
+        pass
 
+print("Finalizing arrays")
+# finalize the arrays
+X = np.vstack(X)
+y = np.asarray(y)
 
-# In[21]:
-
-
-# stack up all the embeddings into arrays
-# A_emb = np.vstack([embedder.vectorize(smi)[0] for smi in valid_reactions["A_smi"].values])
-# B_emb = np.vstack([embedder.vectorize(smi)[0] for smi in valid_reactions["B_smi"].values])
-
-
-# In[76]:
-
-
-# combined = np.hstack([A_emb, B_emb])
-
-
-# In[22]:
-
-
-# The nominal product given as the row-wise sum of A + B
-# product = A_emb + B_emb
-
-
-# In[47]:
-
-
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import KFold, GridSearchCV
-
-
-# In[80]:
-
-
-model = GradientBoostingRegressor(learning_rate=0.01, max_depth=3)
-
-
-# In[79]:
-
-
-rates = valid_reactions["Rate"].values
-
-
-# In[81]:
-
-
-model.fit(combined, rates)
-
-
-# In[82]:
-
-
-mean_squared_error(model.predict(combined), rates)
-
-
-# ## K-Fold cross-validation for model selection
-
-# In[77]:
-
-
-kfold = KFold(5, random_state=42, shuffle=True)
-
-
-# In[62]:
-
-
-hyperparams = {
-    "learning_rate": 10 ** np.arange(-4.0, 0.0, 1.0),
-    "n_estimators": [
-        20,
-        50,
-        100,
-        150,
-    ],
-    "max_depth": [1, 3, 5],
-}
-
-
-# In[63]:
-
-
-search = GridSearchCV(
-    GradientBoostingRegressor(), hyperparams, cv=kfold, scoring="neg_mean_squared_error"
-)
-
-
-# In[64]:
-
-
-with parallel_backend("threading", n_jobs=4):
-    result = search.fit(combined, rates)
-
-
-# In[70]:
-
-
-herp = result.cv_results_
-del herp["params"]
-
-
-# In[72]:
-
-
-pd.DataFrame(herp).sort_values(["rank_test_score"])
-
-
-# In[ ]:
+print("Saving arrays to HDF5 file")
+with h5py.File("../data/processed/kida_rate_data.h5", "a") as h5_file:
+    for key, array in zip(["X", "y"], [X, y]):
+        try:
+            del h5_file[key]
+        except KeyError:
+            pass
+        h5_file.create_dataset(key, data=array)
