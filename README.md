@@ -12,9 +12,6 @@ molecules on a Dell XPS 15 (32 GB ram, 6 core i7-9750H) without much difficulty
 thanks to frameworks like `dask` that can abstract away a large amount of the
 parallelization and out-of-memory operations.
 
-Results from this work have not yet been published yet, but will be updated once
-that happens.
-
 ## Installation
 
 Currently, the codebase is not quite ready for public consumption: while the
@@ -22,9 +19,9 @@ API more or less works as intended, there's still a bit of fussing around with
 model training and deploying. If you would like to contribute to this aspect,
 please raise an issue in this repository!
 
-A `conda.yml` will reproduce the software environment. The `Makefile` will
-take care of a lot of this work too, for this who are inclined, although
-this has not been updated yet.
+The `Makefile` `environment` recipe should recreate the software environment
+needed for `umda` to work. Simply run `make environment` to set everything
+up automatically.
 
 ## Instructions
 
