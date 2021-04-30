@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import h5py
 from matplotlib import pyplot as plt
+from tqdm.auto import tqdm
 
 """
 This script is used to generate the UMAP visualization
@@ -18,15 +19,18 @@ logger.add("global_viz.log")
 rng = np.random.RandomState(42)
 
 umap_kwargs = {
-    "n_neighbors": 100,
+    "n_neighbors": 50,
     "metric": "euclidean",
     "random_state": rng,
+    "min_dist": 0.01,
+    "spread": 1.,
+    "low_memory": False
     }
 
 embedding_path = "../data/processed/pipeline_embeddings_70.h5"
 
 with h5py.File(embedding_path, "r") as h5_file:
-    vectors = np.array(h5_file["pca"])
+    vectors = np.array(h5_file["pca"]).astype(np.float32)
     logger.info(f"Shape of the vector matrix: {vectors.shape}")
 
 logger.info("Initializing UMAP")
@@ -37,14 +41,25 @@ indices = np.arange(vectors.shape[0])
 indices = rng.choice(indices, size=100000)
 indices.sort()
 
-chosen = vectors[indices]
+chosen = np.ascontiguousarray(vectors[indices]).astype(np.float32)
 
 logger.info("Fitting UMAP to chosen subset")
 umap_model.fit(chosen)
 # this is all the embeddings
-umap_vecs = umap_model.transform(vectors)
+combined = list()
+# chunk the projection as we don't have enough memory :P
+logger.info("Fit done. Now projecting the full dataset iteratively.")
+for index, chunk in tqdm(enumerate(np.array_split(vectors, 50))):
+    logger.info(f"Chunk {index+1}, chunk size {chunk.shape}")
+    combined.append(umap_model.transform(chunk))
+umap_vecs = np.vstack(combined)
 
 with h5py.File("../data/processed/umap_vectors.h5", "a") as output:
+    for key in ["umap", "chosen", "index"]:
+        try:
+            del output[key]
+        except KeyError:
+            pass
     output["umap"] = umap_vecs
     output["chosen"] = chosen
     output["index"] = indices

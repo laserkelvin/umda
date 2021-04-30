@@ -1,2 +1,5 @@
 *.dat
-dask-worker-space
+dask-worker-space/
+*.csv
+*.npy
+*.smi

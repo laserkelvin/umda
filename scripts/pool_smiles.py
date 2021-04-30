@@ -36,7 +36,7 @@ for smi_file in Path("../data/external").rglob("*/*.smi"):
     for line in temp:
         if len(line) != 0:
             smi_list.append(line.split(" ")[0])
-            labels.append(0.)
+            labels.append(0)
 
 logger.info(f"Dataset size with ZINC: {len(smi_list)}")
 

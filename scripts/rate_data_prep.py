@@ -117,7 +117,8 @@ for index, row in tqdm(valid_reactions.iterrows()):
     # force the temperature ranges to be within [0, 300]
     min_temp = max(0.0, min_temp)
     max_temp = min(300.0, max_temp)
-    temperatures = np.linspace(min_temp, max_temp, 50)
+    t_range = sorted([min_temp, max_temp])
+    temperatures = np.linspace(*t_range, 50)
     try:
         rates = compute_rate(
             row["react_class"], temperatures, row["alpha"], row["beta"], row["gamma"]
