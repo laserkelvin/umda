@@ -1,5 +1,7 @@
 # Unsupervised Molecule Discovery in Astrophysics
 
+![umap-image](umap_image.png)
+
 ## Applying cheminformatics to astrochemistry
 
 This repository includes notebooks and codebase for developing machine learning
