@@ -27,7 +27,26 @@ up automatically.
 
 ## Instructions
 
-Work in progress!
+Currently a user API is underdeveloped, and so if you would like to run your
+own predictions it is somewhat manual. As part of the repository, we've included
+a pretrained embedding model, as well as a host of regressors stored as `pickle`s
+dumped using `joblib`.
+
+Here is an example of the bare minimum code one needs to run the model and
+predict the column density of benzene and formaldehyde using linear regression:
+
+```python
+from joblib import load
+import numpy as np
+
+# load a wrapper class for generating embeddings
+embedder = load("models/EmbeddingModel.pkl")
+regressor = load("models/linear_regression_grid.pkl").best_estimator_
+
+smiles = ["C1=C=C=C=C=C1", "C=O"]
+vecs = np.vstack([embedder.vectorize(smi) for smi in smiles])
+regressor.predict(vecs)
+```
 
 --------
 
