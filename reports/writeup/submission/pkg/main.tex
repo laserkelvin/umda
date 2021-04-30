@@ -1,0 +1,403 @@
+\documentclass[twocolumn]{aastex63}
+\usepackage{float,graphicx,amsmath,multirow}
+\usepackage{color}
+\usepackage[version=4]{mhchem}
+\usepackage{booktabs}
+\usepackage{gensymb}
+
+\graphicspath{{figures/}}
+
+
+\begin{document}
+
+\title{Unsupervised Machine Learning of Interstellar Chemical Inventories}
+\author{Kin Long Kelvin Lee}
+\affiliation{Department of Chemistry, Massachusetts Institute of Technology, Cambridge, MA 02139, USA}
+\affiliation{Center for Astrophysics $\mid$ Harvard~\&~Smithsonian, Cambridge, MA 02138, USA}
+\author{Jacqueline Patterson}
+\affiliation{Indiana University, Bloomington, IN 47405, USA}
+\affiliation{Center for Astrophysics $\mid$ Harvard~\&~Smithsonian, Cambridge, MA 02138, USA}
+\author{Andrew M. Burkhardt}
+\affiliation{Center for Astrophysics $\mid$ Harvard~\&~Smithsonian, Cambridge, MA 02138, USA}
+\author{Vivek Vankayalapati}
+\affiliation{The University of Utah, Salt Lake City, UT 84112, USA}
+\affiliation{Center for Astrophysics $\mid$ Harvard~\&~Smithsonian, Cambridge, MA 02138, USA}
+\author{Michael C. McCarthy}
+\affiliation{Center for Astrophysics $\mid$ Harvard~\&~Smithsonian, Cambridge, MA 02138, USA}
+\author{Brett A. McGuire}
+\affiliation{Department of Chemistry, Massachusetts Institute of Technology, Cambridge, MA 02139, USA}
+\affiliation{National Radio Astronomy Observatory, Charlottesville, VA 22903, USA}
+\affiliation{Center for Astrophysics $\mid$ Harvard~\&~Smithsonian, Cambridge, MA 02138, USA}
+
+
+\correspondingauthor{Kin Long Kelvin Lee, Brett A. McGuire}
+\email{kelvlee@mit.edu, brettmc@mit.edu}
+
+\begin{abstract}
+
+The characterization of interstellar chemical inventories provides valuable insight into the chemical and physical processes in astrophysical sources. The discovery of new interstellar molecules becomes increasingly difficult as the number of viable species grows combinatorially, even when considering only the most thermodynamically stable. In this work, we present a novel approach for understanding and modeling interstellar chemical inventories by combining methodologies from cheminformatics and machine learning. Using multidimensional vector representations of molecules obtained through unsupervised machine learning, we show that identification of candidates for astrochemical study can be achieved through quantitative measures of chemical similarity in this vector space, highlighting molecules that are most similar to those already known in the interstellar medium. Furthermore, we show that simple machine learning regressors are capable of reproducing the abundances of entire chemical inventories, and by extension, the abundance of any undiscovered molecule. As a proof-of-concept, we have developed and applied this discovery pipeline to the chemical inventory of a well-known dark molecular cloud, the Taurus Molecular Cloud 1 (TMC-1); one of the most chemically rich regions of space known to date. In this paper, we discuss the implications and new insights machine learning explorations of chemical space can provide in astrochemistry.
+
+\end{abstract}
+\keywords{Astrochemistry, ISM: molecules}
+
+\section{Introduction}
+\label{intro}
+
+In the interstellar medium, molecules act as sensitive probes of their local environment. Their relative abundances can be used to infer myriad physical properties of the target system ranging from the thermal history of the source \citep{2002ApJ...571L..55L}, to the kinematic structure of the gas \citep{2018ApJ...860L..13P,2020arXiv200904345D}, the passage of recent hydrodynamic shock \citep{Schilke:1997dt}, or the presence of various radiation fields \citep{2017ApJ...843L...3C}.  The chemical inventories---and abundances---are also deeply tied to the environment itself, from carbon- and silicon-rich evolved stars \citep{Gong:2015ks}, to organic-rich star-forming cores \citep{Belloche:2019hc}, to the salty disks around massive stars \citep{Ginsburg:2019fu}. Thus, the utility of molecules as tracers of the chemical and physical properties and evolutionary history of astrophysical sources increases with the completeness of chemical inventories in these regions: the more knowledge we possess of the inventory, the more astrophysical information we can derive.  
+
+Detecting new molecules in space, and using these detections to infer astrophysics, has underpinned the foundation of astrochemical research for over half a century, although the pace of discovery truly exploded with the advent of molecular radio astronomy in the 1960s \citep{McGuire:2018mc}.  Growing alongside laboratory and observational efforts to identify new molecules in space, astrochemical models were developed to attempt to reconstruct the network of chemical reactions occurring in the environments that were being studied (see, e.g., \citealt{wakelam_2014_2015} and \citealt{Garrod:2008tk}).  The analysis and refinement of these models, from relatively simple networks focusing on just a few molecules \citep{herbst_formation_1973,Guzman:2015iv} to very large holistic approaches attempting to replicate the observed abundances in a source \citep{van_dishoeck_comprehensive_1986,Garrod:2013id}, provide a small window into the complex processes occurring toward a diverse set of environments \citep{Schilke:1997dt}.  Yet, often these models are descriptive rather than predictive: while they replicate many of the abundance ratios seen in an observation and provide substantial insight into the associated chemistry and physics, they can also struggle to predict abundances of other species that have not yet been observed (see, e.g., \citealt{McGuire:2015bp}). For each newly detected molecule, we must contemplate a host of related species and reaction pathways necessary to describe its chemistry. To date, this aspect of astrochemistry has solely depended on chemical intuition: we draw on subjective expertise to determine what \emph{may} be important to dedicate computational, laboratory, and observational efforts to. As the complexity of molecules grows beyond a few carbon atoms, however, the number of possible isomers grows combinatorially and inference based on human intuition becomes neither tractable nor exhaustive. 
+
+% Ultimately, expanding our knowledge of chemical inventories in space usually relies upon chemical intuition: a researcher looking at the collection of molecules seen in a source and making an intuitive leap to what other species might be present.  We currently lack a robust, computer-based methodology for suggesting new species of interest for us to study with computational chemistry, measure in the laboratory, and attempt to observe in space.
+
+Interestingly, fields such as drug and materials discovery face a similar problem; open source tools in the cheminformatics and machine learning space have transformed how novel molecules are discovered and/or designed [e.g. \citep{janet_machine_2020,kulik_making_2020,david_molecular_2020}]. By exploiting the scalability of chemically descriptive computer representations of molecules, we can systematically and exhaustively identify attractive candidates for astrochemical study. In this work, we demonstrate the feasibility and accuracy of such an approach on a well-characterized chemical inventory, the cyanopolyyne peak of the Taurus Molecular Cloud 1 complex (TMC-1). Combining unsupervised machine learning of chemical embeddings with ``classical'' machine learning regressors, we are not only able to successfully reproduce observed molecular abundances, but recommend and predict the abundances of thousands of chemically related molecules. Perhaps most importantly, our approach does not require prior knowledge of the physical/chemical conditions, contrasting with conventional chemical modeling, which can rely on parameters that are not always known and/or cannot be directly determined. 
+
+In this paper, we provide a verbose discussion of the workflow, theory, and implications of applying unsupervised machine learning for astrochemical inference; given the relatively niche intersection of cheminformatics, machine learning, and astrophysics, this paper is written with particular emphasis on the interpretation and reconciliation of machine learning predictions with chemical intuition. We begin by introducing machine representations of molecules, followed by details on the overall workflow and descriptions of various regressors. From there, we discuss and provide visualizations of the learned vector representations, and contextualizing them in the broader scopes of chemical inventories and networks, and finally discuss the use of these embeddings for recommendation and regression. 
+
+\section{Computational methods}
+
+\subsection{Molecule representation learning}
+
+In order for quantitative comparisons to be made with machine learning methods, molecular features need to first be encoded into vector representations. A common approach is to hand pick features appropriate for the task at hand, for example the length of hydrocarbons or the number and types of functional groups, and express properties using additivity schemes \citep{benson_additivity_1958}. While these approaches are simple to implement, they are subject to the choice of features and as certain features may only occur in certain groups of molecules, hand picked features are neither scalable nor balanced in their approach to representations. Alternatively, more systematic [e.g. Coulomb matrices \citep{rupp_fast_2012}] and unsupervised approaches such as \textsc{mol2vec} \citep{jaeger_mol2vec_2018} provide means to generate molecule vectors without the need to choose descriptors. For this work, we have chosen the \textsc{mol2vec} approach, as it does not require molecular structures---instead, \textsc{mol2vec} repurposes the \textsc{word2vec} algorithm \citep{mikolov_efficient_2013} developed for natural language processing, and operates on linear string representations of molecules, specifically in the SMILES format \citep{weininger_smiles_1988,oboyle_towards_2012} commonly enumerated in large datasets.
+
+The \textsc{mol2vec} algorithm decomposes the representation task into two aspects; unique atom environments defined by a radius hyperparameter are hashed with the Morgan algorithm \citep{morgan_generation_1965} to form a dictionary/corpus of substructures, which are subsequently used to train a multilayer perceptron---a continuous bag of words architecture \citep{mikolov_efficient_2013}---to learn a context-aware, unsupervised mapping of substructures (words) to molecule (sentences) vectors. Thus, for every canonical SMILES string that encodes every functional group and connectivity in a molecule, \textsc{mol2vec} generates $n$-dimensional vectors (in our case, 300-dimensions) as a sum of substructure vectors, capturing \emph{every} molecular feature. This model description of chemistry has been successfully used for a number of predictive tasks, for example drug activity screening \citep{das_repurposed_2021}, property prediction and rationalization \citep{zheng_identifying_2019}, and chemical space exploration and visualization \citep{shibayama_application_2020}.
+
+By training the model on a diverse set of SMILES strings---as with many unsupervised approaches---the resulting embeddings become more holistic in their description of chemical properties. Developing a dataset for astrochemical purposes, however, requires striking a balance in descriptiveness and utility: cheminformatics datasets typically comprise large, biological molecules whereas those detected in the interstellar medium are smaller and oftentimes transient and unstable. Given that dataset bias is currently a well-known problem in word embeddings used for natural language applications \citep{bolukbasi_man_2016,basta_evaluating_2019}, we were mindful not to bias toward terrestrial chemistry albeit only qualitatively so. For this reason, we curated a comparatively small dataset of molecule SMILES balanced in its emphasis on molecules relevant to interstellar chemistry (KIDA, NASA PAH database), and small to medium sized molecules from several generalized datasets (QM9, ZINC, Pubchem, PCBA). For some datasets, SMILES notation for the molecules are not provided, for example the NASA PAH database and KIDA: the former provides cartesian coordinates, and the latter InCHI notation. In both cases, \textsc{OpenBabel} \citep{oboyle_open_2011} was used to convert these formats into SMILES strings. The sources of data are summarized in Table \ref{tab:dataset}, and correspond to a total of 6,883,279 entries which are filtered for duplicates, resulting in 3,316,454 unique canonical SMILES strings that constitute the training data for \textsc{mol2vec} and for molecule recommendations. While we have not performed a systematic analysis into the influence of each public dataset on the resulting embeddings, from Table \ref{tab:dataset}, it is easy to conclude that the number and diversity of molecules contained in astrochemical datasets like KIDA and the NASA PAH database alone would not be sufficient for an adequately descriptive embedding. We note also that this dataset comprises radicals and ions, however we have chosen not to include isotopologues although they can be readily encoded in SMILES strings.
+
+\begin{table*}[ht]
+    \centering
+    \caption{Composition of the dataset used for this work; sources and number of entries within each dataset.}
+    \begin{tabular}{l r c}
+        \toprule
+        Source & Number of entries & Reference \\
+        \midrule
+        ZINC & 3,862,980 & \citet{sterling_zinc_2015} \\
+        PubChem A & 2,444,441 & \citet{kim_pubchem_2021} \\
+        PCBA & 437,929 & \citet{wang_pubchems_2012} \\
+        QM9 & 133,885 & \citet{ramakrishnan_quantum_2014} \\
+        NASA PAHs & 3,139 & \citet{boersma_nasa_2014,bauschlicher_nasa_2018,mattioda_nasa_2020} \\
+        KIDA & 578 & \citet{wakelam_2014_2015}\\
+        TMC-1 & inc. \ce{H2}, 88 & See Table \ref{tab:fulldata} \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:dataset}
+\end{table*}
+
+\subsection{Model pipeline}
+
+Figure \ref{fig:pipeline} illustrates the computational flow: molecular structures encoded as SMILES strings are passed to the trained \textsc{mol2vec} embedding model, generating 300-dimension feature vectors. Subsequently, we carry out a dimensionality reduction with principal components analysis (PCA) followed by clustering with $k$-means. Of the regression algorithms surveyed here, Gaussian Processes (GPs) are the most memory and compute intensive due to the factorization of large matrics, which for a naive implementation, scales with $O(n^3)$. Reduction with PCA decreases the memory usage substantially, and $k$-means clustering ensures prediction/recommendations are carried out only on molecules that are relevant to those found in the astrophysical source under investigation. For details on the PCA dimensionality reduction, see Appendix \ref{sec:pca}. 
+
+\begin{figure*}
+\centering
+\includegraphics[width=0.8\textwidth]{pipeline}
+\caption{Proposed workflow for unsupervised training and prediction of molecular properties. Molecular structures can be encoded in a number of ways, ranging from atomic Cartesian coordinates to internal coordinate (or Z-) matrices. Structures are standardized with canonical SMILES, ensuring uniqueness in the dataset, and transformed into molecule vectors using \textsc{mol2vec}. The dimensionality of the vectors are reduced via principal components analysis (PCA), and are used by various models to predict target properties.}
+\label{fig:pipeline}
+\end{figure*}
+
+\subsection{Model specification and selection}
+
+The final step of the pipeline shown in Figure \ref{fig:pipeline} is to perform supervised machine learning to predict column densities of molecules detected in TMC-1. To establish a baseline for performance, we tested a variety of commonly used machine learning algorithms, chosen for their simplicity, and some for their well-documented performance and interpretability. Table \ref{tab:model-list} organizes the methods used, and we provide a short overview of advantages and disadvantages of each. Each method is classified into whether there are learnable parameters or not; as we will discuss in subsequent sections, this will motivate the choice of method to apply.
+
+The simplest parametric and non-parametric models considered in this work are linear regression (LR) and $k$-nearest neighbors ($k$NN) respectively, which represent the two types of model abstraction. The former makes the assumption that the column density varies linearly on a \emph{global} scale in chemical space, while the latter expresses the column density as a distance weighted function. Thus, LR parameterizes a function that dictates the abundance of molecules decreases linearly from small to large molecules (i.e. chemical complexity), whereas for $k$NN the focus is \emph{local} chemical similarity.
+
+The remaining models are more sophisticated in their use of embedding space. First, $\varepsilon$-support vector regression [SVR; \citep{drucker_support_1996,platt_probabilistic_1999}] builds on top of linear regression by applying an $\varepsilon$ regularization term and a kernel transformation to the features prior to regression: in doing so, the model is capable of capturing nonlinearity in the embeddings while maintaining a simple linear mapping onto the column densities. For this work, we consider a radial basis function kernel with width $\gamma$. The ensemble learning methods we employ include random forest [RFR, \citep{liaw_classification_2002}] and gradient boosting [GBR, \citep{friedman_stochastic_2002}]; these often substantially improve upon linear models in both bias (boosting) and variance (forests) performance by aggregating the results of multiple weak models that collectively form an ensemble. The former comprises submodels that are based on randomly selected features with replacement, with the result given as a error weighted average of all submodels predictions. The latter sequentially trains predictors with weighted data, where the weights are given by the gradient of the error from the prior predictor; a large number of estimators thus tend to yield results with very low bias, and as an ensemble, low variance. 
+
+The last method we consider are GPs, which treat \emph{functions} of molecular properties as a stochastic process collectively defined by mean and covariance/kernel functions which---similar to $k$NN---expresses the column density as a function of distance in the embedding space. Among the regression models considered here, GPs are unique in their probabilistic nature and being the most flexible, given the ability to design kernel functions that optimally suit the embedding space. Given, however, that the embeddings are not directly interpretable, we provide here only a simple mixture kernel comprising two isotropic subkernels: a short-ranged radial basis function kernel, and a long-ranged rational quadratic kernel. This covariance function was formulated assuming two smoothly varying components of chemical space; the former dominates for molecules that are chemically very similar (e.g. \ce{HC5N} and \ce{HC7N}), and the latter contributes for molecules that are at different scales of chemical complexity or size, however share common features such as functional groups (e.g. \ce{HC5N} and benzonitrile \ce{C6H5CN}).
+
+The primary goal of each regressor is to accurately reproduce the observed column densities in TMC-1; for our purposes, this corresponds to the column densities of 87 molecules spanning from methylidyne \ce{CH} to cyanonaphthalene (c-\ce{C10H7CN}). As an additional constraint, we systematically included a number of molecules from the database that are not detected in TMC-1 into the regressor training, whose column densities are set to zero. The rationale here is to induce the correct physical behavior in our models where extremely large molecules are unlikely to be formed or found. These molecules are identified by cosine distance with an arbitrary upper percentile from the TMC-1 molecule centroid, with the distance threshold tuned to strike a balance between the desired behavior and not overemphasizing unlikely molecules, or negative examples. Here, we constrain molecules outside the 99.98th percentile---in other words, molecules approximately $3.5\sigma$ away from the centroid---to zero column density.
+
+To briefly summarize the data used for this work: 3.3 million molecules constitute the dataset for training the embedding and PCA model; 455,461 molecules form the subset of which are considered astrochemically relevant to TMC-1 through $k$-means clustering. For column density prediction, the data comprises 87 molecules with observed column densities toward TMC-1, with an additional 8 chosen from the 455,461 that constitute the 99.98th percentile in cosine distance from the TMC-1 molecules (see Figure \ref{fig:zerocolumn_struct} for an example).
+
+For all model types, we perform ten-fold shuffled cross-validation whereby the data is sequentially split into ten training and validation sets, whereby the regressor is trained on the former, and scored on the latter as an estimate of generalization error. A grid search over hyperparameters was conducted with cross-validation to determine the most generalizable set of hyperparameters, as determined by the lowest validation set error. Table \ref{tab:model-list} summarizes the hyperparameters that are tuned as part of the exhaustive grid search. All models used in this work are implemented in \textsc{scikit-learn} \citep{pedregosa_scikit-learn:_2011}.
+
+\begin{table*}[]
+    \centering
+    \caption{Summary of models used in this work, their types, and respective optimized hyperparameters during cross-validation.}
+    \begin{tabular}{l l l}
+        \toprule
+        Model & Category & Parameter space \\
+        \midrule
+        Linear regression & P & Coefficients \\
+        Support vector machines & P & Coefficients, $L_2$ and $\varepsilon$ regularization, $\gamma$ \\
+        $k$-nearest neighbors & NP & Num. neighbors, distance metric \\
+        Random forest & NP & Num. leafs and trees, tree depth, samples per leaf \\
+        Gradient boosting & NP & Learning rate, num. estimators, subsample fraction \\
+        Gaussian process & NP & Learning rate, kernel parameters \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:model-list}
+\end{table*}
+
+
+\section{Results \& discussion}
+
+\subsection{Vector representations of chemistry}
+
+The first step in the proposed pipeline is the generation of vector representations of molecules via unsupervised machine learning using the \textsc{mol2vec} method, which in turn is adapted from the \textsc{word2vec} algorithm from the natural language processing domain. In this section, explore a few properties of the learned embedding including the possible manipulations and information compression.
+
+To infer how chemical intuition is encoded in the \textsc{mol2vec} vectors, Figure \ref{fig:cosine} shows how the similarity, or conversely distance, changes over chemical space defined as a spectrum between two extremes: small molecules like methyl cyanide (\ce{CH3CN}) and monolithic structures such as buckminsterfullerene (\ce{C60}). The two metrics, euclidean distance and cosine similarity, provide slightly different insight into how the vectors behave---the latter is scale invariant as it simply measures the alignment of two vectors, while the former is not. This is particularly important in differentiating between molecules that are highly similar; for example, the margin between \ce{CH3CN} and methyl acetylene (\ce{CH3CCH}), and glycine (\ce{NH2CH2COOH}). Intuitively, the two methyl chains should be much more similar/closer in distance than \ce{CH3CN} and \ce{NH2CH2COOH} in terms of molecule size and functionalization (i.e. the former have methyl groups). 
+
+\begin{figure}
+    \centering
+    \includegraphics{cosine_similarity.pdf}
+    \caption{Similarity of arbitrarily chosen molecules with respect to methyl cyanide, given as a function of euclidean distance (top) in $\log$ space and cosine similarity (bottom).}
+    \label{fig:cosine}
+\end{figure}
+
+To better understand the learned representation as well as the chemical inventory of TMC-1, we applied the Uniform Manifold Approximation and Projection (UMAP) method \citep{mcinnes_umap_2020} to visualize the embeddings of molecules detected toward TMC-1. This approach attempts to learn an approximation to the manifold of the embedding space, and produces a mapping between the approximate manifold and a lower dimensional representation in an unsupervised fashion. For our purposes, the goal is to visualize the two-dimensional chemical space comprised by molecules in TMC-1, whilst preserving the topology of the PCA reduced 70-dimensional vectors. 
+
+As shown in Figure \ref{fig:umapviz}, the UMAP method provides a unique perspective on chemical inventories, and validates some assertions of what is contained in the embeddings. For example, chemically similar molecules such as the cyanopolyynes and their methylated variants are located in the same region (lower left, Figure \ref{fig:umapviz}), and trends within these families are also observable (i.e. chain elongation). To the top right region of Figure \ref{fig:umapviz} clusters smaller species together, which constitutes the other extreme of molecules detected toward TMC-1, contrasting the large carbon chains. This dichotomy illustrates how chemical inventory characterization to date has largely followed a linear progression in chemical space---from top right to the bottom left, as shown by the dashed line in Figure \ref{fig:umapviz}. The recent detections of large aromatic species such as indene [\ce{C9H8}, \citep{burkhardt_discovery_2021}] and cyanonaphthalenes [\ce{C11H7N}, \citep{mcguire_detection_2021}] intuitively correspond to a different type of chemistry, and is indeed identified in the UMAP projection as a cluster of molecules as somewhat orthogonal to the rest of detections, progressing from c-\ce{C3H2} through to \ce{C11H7N}.
+
+\begin{figure*}[ht]
+    \centering
+    \includegraphics[width=\textwidth]{umap_tmc1_viz_alllabel.pdf}
+    \caption{Visualization of the TMC-1 inventory, where the axes represent the UMAP learned two-component projection of the 70 dimensional vector molecule representation. Colors represent arbitrary classification of molecules, and were not used for UMAP training. The size of each scatter point corresponds to the molecular column density. The dashed line corresponds to a linear fit to the projection as a visual guide.}
+    \label{fig:umapviz}
+\end{figure*}
+
+Taking the inventory of TMC-1 into a broader context, Figure \ref{fig:kidaviz} shows a UMAP projection of molecules detected in TMC-1 and species contained in the KIDA network. The main observations here are that by in large, the KIDA network overlaps well with the inventory of TMC-1, corroborating with the current intuition of which species are important in the description of chemistry in dark molecular clouds. Where the KIDA points in chemical space are sparse, however, pertain to the recently detected aromatic molecules, which are clustered toward the center of Figure \ref{fig:kidaviz}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\columnwidth]{kida_tmc1_umap.pdf}
+    \caption{UMAP projections conditioned on the combined TMC-1 and KIDA molecule embeddings. Points with the shaded squares near the center of the image correspond to the aromatic ring molecules detected in TMC-1. Several indicative molecules are annotated to }
+    \label{fig:kidaviz}
+\end{figure}
+
+\subsection{Targets for astrochemical study \label{sec:targets}}
+
+One aspect in astrochemistry that is currently poorly defined is the identification of potential molecules of interest for laboratory, observational, and/or modeling efforts. Using the chemical embeddings, likely targets for study can be readily identified simply by proximity in the latent space: molecules discovered in a given source or survey can be used as cluster centers, and molecules from the full dataset within an arbitrary distance threshold can be proposed for study in a systematic fashion. The basis for this is chemical similarity, in a way similar to how isomers and conformers of detected species are viable targets; we have simply vectorized this process.
+
+Here, we provide recommendations for viable candidates of targeted efforts by selecting 100 nearest neighbors for each of the 87 non-isotopologue species detected in TMC-1, and using quantum chemistry to estimate their rotational constants and dipole moments as to assist in their discovery. The list is filtered for: (1) duplicates; (2) heavy elements outside of C, N, O, Si, P, S; (3) van der Waals complexes, leading to 1507 unique molecules. From this list, cartesian coordinates for each structure were generated and optimized with the UFF force field \cite{rappe_uff_1992} implemented in \textsc{OpenBabel} \cite{oboyle_open_2011}. The generated 3D structures are then refined at the $\omega$B97X-D/6-31+G(d) level of theory \citep{chai_long-range_2008,rassolov_6-31g*_1998}, chosen as a suitable compromise between computational expense and accuracy, in addition to well-known uncertainties and scaling factors \citep{lee_bayesian_2020}. For open-shell species, an unrestricted reference was used; results for these molecules should be taken conservatively---here we assume that the performance of the electronic structure method and basis provides the same systematic errors in the predicted structure as for the closed-shell case. It is likely that these species will require substantially more sophisticated treatments for desirable accuracy, including estimation of their fine structure properties. Geometry optimization was performed using the \textsc{geomeTRIC} package \citep{wang_geometry_2016} with gradients calculated using \textsc{Psi4} \citep{parrish_psi4_2017}. Out of the full 1507 molecules, this procedure was successful for 1430 species; 77 were non-convergent either at the self-consistent field or geometry optimization steps.
+
+The full list of molecules can be found as supporting information; for brevity, we highlight and rationalize a few recommendations. Some general observations of the candidates include:
+
+\begin{enumerate}
+    \item The majority of molecules are unsaturated, containing at least one double or triple bond (888 molecules, or 59\%);
+    \item The vast majority of candidates are not pure hydrocarbons, with an average of at least 1.1 heteroatoms (184 pure hydrocarbons, 12\%);
+    \item Most contain nitrogen, particularly as a \ce{-C#N} group (644 cyanides, 43\%);
+    \item Relevant to aromatic species, molecules with up to three rings are recommended. A majority of novel molecules suggested contain aromatic carbon in some form (813 species). On a similarity basis, molecules with the same number of rings are typically recommended, although molecules with more or fewer rings are also identified in the search.
+\end{enumerate}
+
+These observations reflect the state of the dataset and the molecules currently detected in TMC-1: the majority of the molecules detected are indeed highly unsaturated, most are tagged with cyanides, and to date, only six aromatic species have been detected. Given the fact that a nearest neighbors approach was used to identify potential candidates, it is not surprising that the recommendations closely resemble those already detected. 
+
+To understand how the recommended molecules using this nearest-neighbors approach is complimentary to chemical inventories and model networks like KIDA, Figure \ref{fig:umaprecs} provides another UMAP learned visualization, trained on the TMC-1 detections, KIDA species, and recommendations. In the case of the former, the group of molecules to the left corresponds to the aromatic molecules detected in TMC-1, with a large number of new recommendations contributing \emph{significantly} toward three subclusters comprising \ce{C9H8}, \ce{C11H7N}, and \ce{C5H5CN}/\ce{C6H5CN} respectively. For KIDA, we see that the recommended species act to fill in large gaps in chemical space, particularly in the regions concerning larger species---between \ce{HC3N} and \ce{HC9N}. In both instances, the main observation is that the recommended molecules add to regions in chemical space that were previously sparse, particularly towards larger molecules. Viewed in this way, there are substantially fewer recommendations for smaller molecules as the inventory is relatively complete, compared to the number of isomers and conformers possible for larger species.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\columnwidth]{rec_umap.pdf}
+    \caption{UMAP projection of the combined TMC-1 inventory (blue), KIDA network (peach), and the recommended molecules for study (green).}
+    \label{fig:umaprecs}
+\end{figure}
+
+
+\subsection{Machine learning of chemical inventories}
+
+From the prior sections, it is clear that our embedding successfully captures aspects of chemical intuition. The goal now is to relate the chemical features with physical parameters---the goal of chemical modeling---in a way that links molecules to directly and non-directly observable aspects of the interstellar medium. Here, we demonstrate the approach for column densities.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\columnwidth]{r2_plot.pdf}
+    \caption{Observed column densities plotted against the corresponding model predictions. The size of each point is proportional to the molecular weight, as an approximate measure for molecular complexity. Molecules set to zero column density are not shown.}
+    \label{fig:r2plot}
+\end{figure}
+
+Figure \ref{fig:r2plot} summarizes the results of the best performing set of parameters for each type of model considered, based on ten-fold cross-validation. We see that most algorithms---even simple linear regression---are able to reproduce the observed column densities remarkably well. The goodness-of-fit in the linear case provides evidence that, at least locally, the abundance is linear in the chemical space comprised by molecules detected in TMC-1, and that there are no specific classes of molecules that demonstrate peculiarities in their abundance. This observation is reinforced by the fact that $k$NN performs extremely well even with only a few neighbors. Were the opposite be true, there would be systematic effects in the residuals, however the errors in the linear fit appear normally distributed. As each molecule is or can be represented in the same embedding basis---regardless of whether they are ions, radicals, pure hydrocarbon or not---the linear function should be able to readily interpolate between molecules detected in TMC-1 and those artificially set to zero column density; all molecules that make up likely candidates fall between these two extremes. We note that in some sense, this is an intuitive result given the observed trends for hydrocarbon chains such as the cyanopolyynes and their methylated analogues, however here we generalize this trend beyond the one-dimensional slices in chemical space (i.e. the length of carbon chains).
+
+\begin{figure*}
+    \centering
+    \includegraphics[width=\textwidth]{demoset.pdf}
+    \caption{Predicted column densities for select molecules (ordinate) versus euclidean distance from \ce{H2CO} (abscissa). The black lines represent observed column densities.}
+    \label{fig:demoset}
+\end{figure*}
+
+To more quantitatively assess model performance as a function of molecular complexity, we can perform linear interpolation between two arbitrary molecules as one-dimensional slices in chemical space, and look for systematic errors in the predicted column densities. Figure \ref{fig:demoset} interpolates between formaldehyde and 2-cyanonaphthalene and identifies the nearest detected molecule to each interpolated point, using the distance from \ce{H2CO} is used to represent chemical complexity. With the exception of random forest regression (RFR), the models considered here are able to reproduce the observed column densities of molecules spanning this one-dimensional slice without obvious systematic trends. In the case of RFR, Figure \ref{fig:demoset} and \ref{fig:r2plot} show that the model is underfit---given the performance of the linear model, this result is somewhat surprising, and we believe that a more exhaustive hyperparameter search would likely increase the performance of RFR closer to that of GBR. Given that the parameter space for RFR is quite large, we did not pursue this further.
+
+From Figure \ref{fig:r2plot}, the three best performing models we have tested are $k$NN, GBR, and GPR. The case of $k$NN is particularly important, as it demonstrates that column densities can be expressed as smooth functions of local distance, and that learnable parameters are not necessary to describe this behavior. This is relevant for applications where only a few molecules have been observed and parametric methods suffer from the curse of dimensionality, which is especially true for highly flexibility models like gradient boosting, which would likely overfit typical astrochemical datasets.
+
+Having established the dataset performance of each machine learning method, we can now use them for extrapolation, predicting column densities for unseen molecules. For the sake of brevity, we utilized the trained GP model to predict column densities of the 1507 recommended molecules from Section \ref{sec:targets}. Figure \ref{fig:reccolumns} illustrates the result in three dimensions: the horizontal plane represents the UMAP learned 2D projection of the chemical space spanned by the TMC-1 dataset and the recommended molecules, and the vertical axis the GP predicted column density. In the left cluster of points, which contain the majority of detected molecules, we see that a significant number of recommended species are predicted to have column densities ($10^{10-12}$\,cm$^{-2}$) comparable to those already detected---laboratory and computational efforts would likely enable their detection, or at least derivations of upper limits that can be used to refine machine learning and chemical models. The same can be inferred for the aromatic\ce{-CN} cluster, where it appears some species are predicted to have higher column densities than those already detected. Interestingly, this is not true for the indene cluster: the vast majority of the recommended molecules are expected to be much lower in column density than indene itself. This may be due to the fact that detections to date have been biased away from pure hydrocarbons and indene itself being the only known example of an aromatic hydrocarbon without a cyanide group. More observational detections or upper limits---likely through the velocity stacking approach \citep{Loomis_2021}---should provide more insight into this class of molecules.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\columnwidth]{3d_umap_recommendations.pdf}
+    \caption{Scatter plot of the UMAP space for the 1507 recommended molecules (blue circles) and molecules detected toward TMC-1 (red crosses), and the corresponding GP predictions of column density. Locations of aromatic molecules are annotated.}
+    \label{fig:reccolumns}
+\end{figure}
+
+% Another aspect of the conditioned GP that can assist in analysis is the covariance matrix: Figure \ref{fig:gpcov} illustrates molecular column density covariances, where each row/column corresponds to a molecule pair out of the 1507 recommended molecules, and shows how the predicted column density for any given species depends on another---given our simple covariance function. Using p
+
+% The magnitude of their covariances measures correlation, indicating which \emph{groups} of molecules are likely candidates, and ranked by their covariance. This provides a systematic approach to self-consistent and exhaustive identification of molecular families, given a definition of the covariance function.
+
+% \begin{figure}
+%     \centering
+%     \includegraphics{rec_covariance.pdf}
+%     \caption{GP covariance matrix for the molecule recommendations.}
+%     \label{fig:gpcov}
+% \end{figure}
+
+One aspect of the modeling that warrants additional discussion became apparent during cross-validation: the parametric models are consistently unable to reproduce the molecular \ce{H2} column density, despite providing otherwise excellent performance for the rest of the dataset. There are two possible explanations for this: either the embedding fails to describe \ce{H2} adequately, or the observed \ce{H2} is anomalous. Figure \ref{fig:bayes} assesses this by comparing the results of GBR with a significantly less flexible linear Bayesian model, which is less susceptible to overfitting due to the combination of $L_2$ regularization and Bayesian parameter estimation. We see that when GBR is fit the full dataset including \ce{H2} without cross-validation, the column density is able to be reproduced, while this is not the case in the linear model case. The former is highly likely to overfit the data, and reflects the overall quality of the embedding. \ce{H2} appears to be the only molecule that is significantly underestimated by two orders of magnitude and outside the uncertainty---given that the \ce{H2} column density is inferred through the relationship between visual extinction and column densities of \ce{CO} and its isotoplogues \citep{cernicharo_physical_1987}, the baseline provided by the linear model indicates that there may be need to revisit this derivation. This example simultaneously highlights the applicability of machine learning models as a form of validation, as well as its usse in inferring the abundance of astrophysically important molecules that are observationally elusive, for either spectroscopic (e.g. no permanent dipole moment) or physical (e.g. extinction) reasons. 
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\columnwidth]{bayes_ridge_h2.pdf}
+    \caption{Observed versus predicted column densities by a (a) gradient boosting and (b) Bayesian ridge regression model fit to the full TMC-1 dataset including \ce{H2}. In the latter case, points correspond to the prediction means, and error bars in the predictions correspond to $1\sigma$ uncertainties. The red dashed line represents the idealized linear case.}
+    \label{fig:bayes}
+\end{figure}
+
+
+\subsection{Comparisons with chemical models}
+
+In the preceding sections, we have evaluated the performance of various machine learning methods for predicting molecular column densities. A natural comparison to be made is with state-of-the-art kinetic chemical models of TMC-1, which have been the main method of choice for predicting abundances of molecules \textit{a priori}. Here, we utilize the three-phase chemical model \textsc{nautilus} \citep{ruaud_gas_2016} with the latest chemical network, elemental abundances, and physical conditions used to describe the formation of aromatics by \citet{burkhardt_discovery_2021}. Figure \ref{fig:model_comp} compares the predicted/observed ratios for five chosen molecules as samples across molecular complexity. Linear regression is chosen as the baseline algorithm for comparison, and we see that it reproduces the abundance of each molecule within an order of magnitude of the observations. For chemical models the molecular abundance is time-dependent, and for the purposes of discussion we have chosen the time slice where the cyanopolyynes have their peak abundances. Under these conditions, the relatively simple species \ce{H2CO}, \ce{H2CS}, and \ce{HC11N} can be seen to agree with the observed abundances to within one to two orders of magnitude. For the aromatic rings, representing more complex species, the chemical model significantly under predicts their abundance; for cyanonaphthalene, this discrepancy is nearly six orders of magnitude, as originally discussed in \citet{mcguire_detection_2021}.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\columnwidth]{ml_model_comparison.pdf}
+    \caption{Comparison of molecular abundances predicted by the linear regression model (blue) and the current state-of-the-art chemical model, \textsc{nautilus} \citep{ruaud_gas_2016}, for TMC-1 (red), given as an the magnitude for the predicted and observed ratio.}
+    \label{fig:model_comp}
+\end{figure}
+
+Beyond abundances, however, the current machine learning approach shares little to no similarities with chemical modeling. While Figure \ref{fig:model_comp} shows quite definitively that linear regression is able to reproduce observed abundances accurately, chemical models are an avenue for inferring physical information about an astrophysical source by reproducing abundances, albeit a complex and difficult process \citep{agundez_chemistry_2013,herbst_formation_1973,van_dishoeck_comprehensive_1986}. With each new interstellar molecule detection, the chemical network must be updated with new species hypothesized to be important in its formation and destruction, along with reaction rates measured, or more commonly, approximated \citep{wakelam_reaction_2010}. In contrast, the allure of the machine learning approaches is the ease of extension: new molecules can be added simply using SMILES strings, and as we have demonstrated in this work, can readily scale up to hundreds to millions of molecules. As we have alluded to in the previous section, a natural extension of this work is to connect physical parameter inference from chemical models with the generalizability of machine learning models: the latter informs the former by providing abundances and constraints on unobserved species, as well as providing recommendations for new molecules to add to chemical networks. Imputation through machine learning thereby results in a self-consistent and systematic approach to the astrochemical inference---we intend to explore and expand upon these ideas in forthcoming work. 
+
+\section{Conclusions}
+
+In this work, we have demonstrated the viability for simple machine learning models to learn and predict entire chemical inventories. Combining the \textsc{mol2vec} model embeddings with algorithms as simple as linear regression, we are able to reproduce the column densities of 87 molecules detected toward TMC-1 to well within an order of magnitude, without the need for prior knowledge pertaining to the physical conditions of the source. With this, we show that the molecule embeddings can be used to identify new likely candidates for interstellar detection and study, based on quantitative measures of chemical similarity between molecule vectors as in a nearest neighbors approach, and using the machine learning models to predict their expected column densities as one way to assess detectability. The attractiveness of our approach is the ability to \emph{systematically} infer the presence of astrophysically important molecules that are not directly observable, for example those without a rotational spectrum, or where conditions are unfavorable (e.g. partition functions), and to provide a baseline for determining the role of dynamical effects, such as grain-surface chemistry. In this way, predictions from machine learning models can be used to impute chemical networks used in conventional chemical modeling, from which we can confidently and comprehensively derive astrophysical insight. 
+
+\acknowledgments
+
+The National Radio Astronomy Observatory is a facility of the National Science Foundation operated under cooperative agreement by Associated Universities, Inc.  The Green Bank Observatory is a facility of the National Science Foundation operated under cooperative agreement by Associated Universities, Inc. J.P. and V.V. acknowledges funding and research support from the SAO REU program; the SAO REU program is funded in part by the National Science Foundation REU and Department of Defense ASSURE programs under NSF Grant no.\ AST-1852268, and by the Smithsonian Institution. M.C.M and K.L.K.L. acknowledge financial support from NSF grant AST-1908576 and NASA grant 80NSSC18K0396.
+
+\newpage
+
+\bibliography{references, molecules, brett}
+\bibliographystyle{aasjournal}
+
+\appendix
+
+\renewcommand{\thefigure}{A\arabic{figure}}
+\renewcommand{\thetable}{A\arabic{table}}
+\renewcommand{\theequation}{A\arabic{equation}}
+\setcounter{figure}{0}
+\setcounter{table}{0}
+\setcounter{equation}{0}
+
+\section{Dimensionality reduction \label{sec:pca}}
+
+The PCA model is trained on the full 3.3 million molecules to identify an adequate number of dimensions required to explain variation in chemical space, whilst providing computational benefits. Ultimately, we chose to use 70 principal components, corresponding to a 0.96 explained variance ratio (Fig. \ref{fig:pca}), or just over $2\sigma$ of variation accounted for by the components.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics{pca_variance.pdf}
+    \caption{Cumulative explained variance ratio as a function of the number of components in the incremental PCA. The dashed lines represent the number of components that approximately correspond with $2\sigma$, $2.5\sigma$, and $3\sigma$ variation.}
+    \label{fig:pca}
+\end{figure}
+
+\section{Molecule dataset}
+
+Table \ref{tab:fulldata} summarizes the molecules detected toward TMC-1 and their respective references, totaling 88 unique species. For the regression tests shown in Figure \ref{fig:demoset}, we exclude molecular hydrogen \ce{H2} owing to the systematic deviation from parametric models. Figure \ref{fig:zerocolumn_struct} shows one of the eight molecules whose column density was explicitly constrained to zero for regression. Based on our current knowledge of the chemical inventory of TMC-1, the size and complexity of this structure---and on grounds of chemical similarity with the remaining seven---would intuitively lead to a vanishingly small ``true'' column density.
+
+\startlongtable
+\begin{deluxetable}{lllc}
+\tablecolumns{4}
+\tablewidth{0pt}
+\tablecaption{Regression dataset comprising molecules detected toward TMC-1. The references provided correspond to the source used for the column density, not initial detection. \label{tab:fulldata}}
+\tablehead{\colhead{Formula} & \colhead{SMILES} & \colhead{Column density} & \colhead{Reference} \\ \colhead{~} & \colhead{~} & \colhead{($\log_{10}$ cm$^{-2}$)} & \colhead{~}}
+\startdata
+ \ce{CH3C6H} &             CC\#CC\#CC\#C &                 12.4914 &    \citet{Remijan_2006} \\
+  \ce{CH3C4H} &                 CC\#CC\#C &                 13.4771 &    \citet{MacLeod_1984} \\
+  \ce{CH3C5N} &             CC\#CC\#CC\#N &                 11.9243 &    \citet{Remijan_2006} \\
+  \ce{CH3C3N} &                 CC\#CC\#N &                 12.2553 &    \citet{Remijan_2006} \\
+    \ce{N2H+} &                  N\#[NH+] &                 12.6990 &       \citet{Choi_2017} \\
+     \ce{NH3} &                         N &                 14.6998 &    \citet{Gratier_2016} \\
+  \ce{CH3OH} &                        CO &                 13.1614 &    \citet{Gratier_2016} \\
+     \ce{C3H} &                 C1=C=[C]1 &                 13.4800 &    \citet{Gratier_2016} \\
+     \ce{C3H} &              [CH+]=C=[C-] &                 12.7497 &    \citet{Gratier_2016} \\
+    \ce{C3H2} &                   C1=C=C1 &                 11.7701 &    \citet{Gratier_2016} \\
+    \ce{C3H2} &                   C1C\#C1 &                 13.2695 &    \citet{Gratier_2016} \\
+    \ce{C3H2} &                   C=C=[C] &                 12.3979 & \citet{Cernicharo_1991} \\
+  \ce{CH3CCH} &                     CC\#C &                 14.0607 &    \citet{Gratier_2016} \\
+     \ce{C2O} &               [C+]\#C[O-] &                 12.5705 &    \citet{Gratier_2016} \\
+  \ce{CH2CN} &                 [CH2]C\#N &                 13.5798 &    \citet{Gratier_2016} \\
+  \ce{CH3CN} &                     CC\#N &                 12.6096 &    \citet{Gratier_2016} \\
+    \ce{HNCO} &                     N=C=O &                 13.0294 &    \citet{Gratier_2016} \\
+      \ce{CS} &                [C-]\#[S+] &                 13.4594 &    \citet{Gratier_2016} \\
+  \ce{CH3CHO} &                      CC=O &                 12.4298 &    \citet{Gratier_2016} \\
+    \ce{HCS+} &                   C\#[S+] &                 12.7597 &    \citet{Gratier_2016} \\
+    \ce{H2CS} &                       C=S &                 13.6201 &    \citet{Gratier_2016} \\
+      \ce{SO} &                       S=O &                 13.6702 &    \citet{Gratier_2016} \\
+     \ce{C4H} &                [C]\#CC\#C &                 13.4298 &    \citet{Gratier_2016} \\
+    \ce{C4H2} &                 C=C=C=[C] &                 13.3365 &    \citet{Gratier_2016} \\
+     \ce{C3N} &                [C]\#CC\#N &                 13.5502 &    \citet{Gratier_2016} \\
+    \ce{HNC3} &          [C-]\#C-C\#[NH+] &                 11.6803 &    \citet{Gratier_2016} \\
+     \ce{C3O} &               [C]\#C[C]=O &                 11.9201 &    \citet{Gratier_2016} \\
+  \ce{HC3NH+} &              C\#CC\#[NH+] &                 11.8698 &    \citet{Gratier_2016} \\
+ \ce{CH2CHCN} &                   C=CC\#N &                 12.8102 &    \citet{Gratier_2016} \\
+  \ce{HCCCHO} &                   C\#CC=O &                 11.2601 &    \citet{Gratier_2016} \\
+     \ce{C2S} &               [C+]\#C[S-] &                 14.0086 &    \citet{Gratier_2016} \\
+     \ce{OCS} &                     O=C=S &                 13.2601 &    \citet{Gratier_2016} \\
+     \ce{C5H} &          [CH+]=C=C=C=[C-] &                 12.2695 &    \citet{Gratier_2016} \\
+     \ce{C3S} &            [C-]\#CC\#[S+] &                 13.1399 &    \citet{Gratier_2016} \\
+     \ce{C6H} &            [C]\#CC\#CC\#C &                 12.7404 &    \citet{Gratier_2016} \\
+    \ce{HC3N} &                  C\#CC\#N &                 14.2430 &        \citet{Xue_2020} \\
+  \ce{HCCNC} &            C\#C[N+]\#[C-] &                 12.5821 &        \citet{Xue_2020} \\
+    \ce{HC5N} &              C\#CC\#CC\#N &                 13.8254 &        \citet{Xue_2020} \\
+  \ce{HC4NC} &        C\#CC\#C[N+]\#[C-] &                 11.5172 &        \citet{Xue_2020} \\
+    \ce{HC7N} &          C\#CC\#CC\#CC\#N &                 13.5623 &        \citet{Xue_2020} \\
+  \ce{HC6NC} &    C\#CC\#CC\#C[N+]\#[C-] &                 11.6064 &        \citet{Xue_2020} \\
+    \ce{HC9N} &      C\#CC\#CC\#CC\#CC\#N &                 13.3345 &     \citet{Loomis_2021} \\
+  \ce{HC11N} &  C\#CC\#CC\#CC\#CC\#CC\#N &                 12.0170 &     \citet{Loomis_2021} \\
+  \ce{C5H5CN} &             C1C=CC=C1C\#N &                 11.9191 & \citet{Kelvin_Lee_2021} \\
+  \ce{C5H5CN} &           C1C=CC(=C1)C\#N &                 11.2788 & \citet{Kelvin_Lee_2021} \\
+  \ce{C11H7N} & C1=CC=C2C(=C1)C=CC=C2C\#N &                 11.8663 &    \citet{mcguire_detection_2021} \\
+  \ce{C11H7N} & C1=CC=C2C=C(C=CC2=C1)C\#N &                 11.8482 &    \citet{mcguire_detection_2021} \\
+  \ce{C6H5CN} &         C1=CC=C(C=C1)C\#N &                 12.2380 &    \citet{mcguire_detection_2021} \\
+\ce{HCCCH2CN} &                 C\#CCC\#N &                 11.9643 &    \citet{McGuire_2020} \\
+  \ce{H3C5N} &             C\#C/C=C/C\#N &                 11.3874 & \citet{lee_discovery_2021} \\
+  \ce{H3C5N} &               C=CC\#CC\#N &                 11.0719 & \citet{lee_discovery_2021} \\
+  \ce{H3C5N} &             C\#C/C=C\\C\#N &                 11.3032 & \citet{lee_discovery_2021} \\
+     \ce{C8H} &        [C]\#CC\#CC\#CC\#C &                 11.6628 &    \citet{Br_nken_2007} \\
+    \ce{C8H-} &       C\#CC\#CC\#CC\#[C-] &                 10.3222 &    \citet{Br_nken_2007} \\
+    \ce{C6H-} &           C\#CC\#CC\#[C-] &                 11.0792 &    \citet{Br_nken_2007} \\
+    \ce{C4H-} &               C\#CC\#[C-] &                 10.9294 &    \citet{Br_nken_2007} \\
+  \ce{H2CCO} &                     C=C=O &                 12.7118 &       \citet{Soma_2018} \\
+      \ce{CN} &                    [C]\#N &                 12.8899 &     \citet{Pratap_1997} \\
+     \ce{HNC} &               [C-]\#[NH+] &                 12.6201 &     \citet{Pratap_1997} \\
+    \ce{HC7O} &        C\#CC\#CC\#C[C+]=O &                 11.8921 &   \citet{Cordiner_2017} \\
+    \ce{HC5O} &            C\#CC\#C[C+]=O &                 12.2304 &    \citet{McGuire_2017} \\
+    \ce{H2CN} &                     C=[N] &                 11.1761 &     \citet{Ohishi_1994} \\
+    \ce{H2CO} &                       C=O &                 13.0792 &       \citet{Soma_2018} \\
+  \ce{HC3O+} &               C\#CC\#[O+] &                 11.3222 & \citet{Cernicharo_2020} \\
+  \ce{HOCO+} &                 O=C=[OH+] &                 11.6021 & \citet{Cernicharo_2020} \\
+  \ce{H2COH+} &                   C=[OH+] &                 11.4771 & \citet{Cernicharo_2020} \\
+  \ce{H2NCO+} &                  NC\#[O+] &                 10.6021 & \citet{Cernicharo_2020} \\
+    \ce{HCNO} &                   C\#N[O] &                 10.8451 & \citet{Cernicharo_2020} \\
+    \ce{HOCN} &                     OC\#N &                 11.0414 & \citet{Cernicharo_2020} \\
+      \ce{H2} &                      [HH] &                 22.0000 & \citet{Cernicharo_2020} \\
+     \ce{C4O} &            [C]\#CC\#[C]=O &                 11.0792 & \citet{Cernicharo_2020} \\
+  \ce{HCOOH} &                    C(=O)O &                 12.1461 & \citet{Cernicharo_2020} \\
+    \ce{HC2O} &                  C\#[C]=O &                 12.0000 & \citet{Cernicharo_2020} \\
+    \ce{HC3O} &                 C\#C[C]=O &                 11.3010 & \citet{Cernicharo_2020} \\
+    \ce{HC4O} &              C\#CC\#[C]=O &                 11.4771 & \citet{Cernicharo_2020} \\
+  \ce{H2C3O} &                   C=C=C=O &                 11.0414 & \citet{Cernicharo_2020} \\
+  \ce{H2C3O} &               C1=C(=O)=C1 &                 11.6021 & \citet{Cernicharo_2020} \\
+      \ce{CH} &                      [CH] &                 14.1461 &      \citet{Sakai_2013} \\
+    \ce{CNCN} &                [C]\#NC\#N &                 11.9542 &    \citet{Ag_ndez_2018} \\
+  \ce{NCCNH+} &              N\#CC\#[NH+] &                 10.9345 &    \citet{Ag_ndez_2015} \\
+    \ce{C6H2} &             C=C=C=C=C=[C] &                 10.3284 &     \citet{Langer_1997} \\
+\ce{CH3CHCH2} &                      CC=C &                 13.6021 &  \citet{Marcelino_2007} \\
+\ce{CH2C2HCN} &                 C=C=CC\#N &                 11.6532 &      \citet{Lovas_2006} \\
+     \ce{HCN} &                      C\#N &                 12.3892 &     \citet{Hirota_1998} \\
+    \ce{C9H8} &          c1ccc2c(c1)CC=C2 &                 12.9823 &                     \cite{burkhardt_discovery_2021} \\
+\ce{CH2CHCCH} &                   C=CC\#C &                 13.0792 & \citet{Cernicharo_2021} \\
+    \ce{HCCN} &                 N\#C[CH+] &                 11.6435 & \citet{Cernicharo_2021} \\
+\ce{CH3CH2CN} &                    CCC\#N &                 11.0414 & \citet{Cernicharo_2021} \\
+\enddata
+\end{deluxetable}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{excluded_molecule.pov.png}
+    \caption{Exemplar molecule artificially constrained to zero column density in the regression model tests.}
+    \label{fig:zerocolumn_struct}
+\end{figure}
+
+\end{document}
+
