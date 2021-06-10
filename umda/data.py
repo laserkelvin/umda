@@ -3,7 +3,7 @@ import pandas as pd
 import h5py
 from joblib import load
 
-from umda import paths
+from umda.utils import paths
 
 
 def load_data(exclude_hydrogen: bool=True):

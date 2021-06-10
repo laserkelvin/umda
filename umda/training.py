@@ -1,14 +1,19 @@
 import numpy as np
-from scipy.stats import lognorm
+from scipy.stats import lognorm, uniform
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import ShuffleSplit, RandomizedSearchCV, GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.gaussian_process import kernels
 
 
 def random_cv_search(
-    data, estimator, hparams, seed, n_splits: int = 5, n_jobs: int = 16
+    data, estimator, hparams, seed, n_splits: int = 5, **kwargs
 ):
+    kwargs.setdefault("n_jobs", 16)
+    kwargs.setdefault("scoring", "r2")
+    kwargs.setdefault("n_iter", 500)
+    kwargs.setdefault("refit", False)
     X, y = data
     splitter = ShuffleSplit(n_splits, random_state=seed)
     # determine the distributions over which to do the CV search
@@ -27,31 +32,29 @@ def random_cv_search(
                 except (ValueError, TypeError):
                     pass
             # draw Gaussian distribution
-            distributions[f"regressor__{key}"] = lognorm(np.mean(temp), np.std(temp))
+            distributions[f"regressor__{key}"] = uniform(np.min(temp), np.max(temp))
     # do a randomized CV search using R^2 as the objective
     grid_search = RandomizedSearchCV(
         estimator,
         distributions,
-        n_iter=1000,
-        scoring="r2",
         cv=splitter,
-        n_jobs=n_jobs,
-        refit=False,
+        **kwargs
     )
     result = grid_search.fit(X, y)
     return result
 
 
-def grid_cv_search(data, estimator, hparams, seed, n_splits: int = 5, n_jobs: int = 16):
+def grid_cv_search(data, estimator, hparams, seed, n_splits: int = 5, **kwargs):
+    kwargs.setdefault("n_jobs", 16)
+    kwargs.setdefault("scoring", "r2")
+    kwargs.setdefault("refit", False)
     X, y = data
     splitter = ShuffleSplit(n_splits, random_state=seed)
     grid_search = GridSearchCV(
         estimator,
         {f"regressor__{key}": value for key, value in hparams.items()},
-        scoring="r2",
         cv=splitter,
-        n_jobs=n_jobs,
-        refit=False,
+        **kwargs
     )
     result = grid_search.fit(X, y)
     return result
@@ -62,7 +65,7 @@ def standardized_fit_test(
 ):
     X, y = data
     splitter = ShuffleSplit(n_splits, test_size=test_size, random_state=seed)
-    best_train_error, best_test_error, best_combined = np.inf, np.inf, np.inf
+    best_train_error, best_test_error, best_performance = np.inf, np.inf, np.inf
     log = list()
     for split_index, (train_index, test_index) in enumerate(splitter.split(X, y)):
         train_X, test_X, train_y, test_y = (
@@ -80,13 +83,13 @@ def standardized_fit_test(
         # compute the mean squared error
         train_error = mean_squared_error(train_y, result.predict(train_X))
         test_error = mean_squared_error(test_y, result.predict(test_X))
-        combined_error = mean_squared_error(y, result.predict(X))
+        performance = np.abs(train_error - test_error) / (train_error + test_error)
         r2 = r2_score(y, result.predict(X))
         log.append(
             {
                 "train_error": train_error,
                 "test_error": test_error,
-                "combined_error": combined_error,
+                "performance": performance,
                 "r2": r2,
                 "train_index": train_index,
                 "test_index": test_index,
@@ -96,9 +99,9 @@ def standardized_fit_test(
             best_split = (train_index, test_index)
             best_train_error = train_error
             best_test_error = test_error
-            best_combined = combined_error
+            best_performance = performance
             best_estimator = result
-    return best_estimator, best_train_error, best_test_error, best_split, log
+    return best_estimator, best_train_error, best_test_error, best_performance, best_split, log
 
 
 def compose_model(base_estimator, scale: bool = False):
@@ -107,3 +110,11 @@ def compose_model(base_estimator, scale: bool = False):
     else:
         models = [("regressor", base_estimator)]
     return Pipeline(models)
+
+
+def get_gp_kernel():
+    gp_kernel = kernels.ConstantKernel() * \
+    kernels.RBF(10.0, (1e-1, 30.0)) + \
+    kernels.RationalQuadratic(200.0, 20.0, alpha_bounds=(1e-3, 5e2), length_scale_bounds=(50.0, 1e4)) * \
+        kernels.ConstantKernel() + kernels.ConstantKernel()
+    return gp_kernel
