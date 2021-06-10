@@ -1,10 +1,11 @@
 import numpy as np
 from scipy.stats import lognorm, uniform
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.model_selection import ShuffleSplit, RandomizedSearchCV, GridSearchCV
+from sklearn.model_selection import ShuffleSplit, RandomizedSearchCV, GridSearchCV, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.gaussian_process import kernels
+from sklearn.utils import resample
 
 
 def random_cv_search(
@@ -58,6 +59,19 @@ def grid_cv_search(data, estimator, hparams, seed, n_splits: int = 5, **kwargs):
     )
     result = grid_search.fit(X, y)
     return result
+
+
+def bootstrap_fit(data, estimator, seed, n_samples: int = 500, test_size: float = 0.2, replace: bool = True):
+    X, y = data
+    boot_X, boot_y = resample(X, y, n_samples=n_samples, replace=replace, random_state=seed)
+    train_X, test_X, train_y, test_y = train_test_split(boot_X, boot_y, test_size=test_size, shuffle=True, random_state=seed)
+    # fit to the bootstrapped training samples
+    result = estimator.fit(train_X, train_y)
+    # run standard metrics for performance
+    train_error = mean_squared_error(train_y, estimator.predict(train_X))
+    test_error = mean_squared_error(test_y, estimator.predict(test_X))
+    r2 = r2_score(y, estimator.predict(X))
+    return result, (train_error, test_error, r2)
 
 
 def standardized_fit_test(
