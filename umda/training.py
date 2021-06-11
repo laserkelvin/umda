@@ -1,3 +1,6 @@
+
+from typing import Tuple
+
 import numpy as np
 from scipy.stats import lognorm, uniform
 from sklearn.metrics import mean_squared_error, r2_score
@@ -11,6 +14,34 @@ from sklearn.utils import resample
 def random_cv_search(
     data, estimator, hparams, seed, n_splits: int = 5, **kwargs
 ):
+    """
+    Perform a randomized CV search for hyperparameter
+    optimization. The main difference between this
+    function and the grid search is that for continuous
+    hyperparameter variables, we use uniform sampling
+    between the min and max values. For categorical (specificallly
+    string lists) we just feed the lists in directly.
+    
+    Kwargs are passed into the random CV object.
+
+    Parameters
+    ----------
+    data : [type]
+        [description]
+    estimator : [type]
+        [description]
+    hparams : [type]
+        [description]
+    seed : [type]
+        [description]
+    n_splits : int, optional
+        [description], by default 5
+
+    Returns
+    -------
+    [type]
+        [description]
+    """
     kwargs.setdefault("n_jobs", 16)
     kwargs.setdefault("scoring", "r2")
     kwargs.setdefault("n_iter", 500)
@@ -45,7 +76,7 @@ def random_cv_search(
     return result
 
 
-def grid_cv_search(data, estimator, hparams, seed, n_splits: int = 5, **kwargs):
+def grid_cv_search(data: Tuple[np.ndarray], estimator, hparams, seed: int, n_splits: int = 5, **kwargs):
     kwargs.setdefault("n_jobs", 16)
     kwargs.setdefault("scoring", "r2")
     kwargs.setdefault("refit", False)
@@ -61,9 +92,44 @@ def grid_cv_search(data, estimator, hparams, seed, n_splits: int = 5, **kwargs):
     return result
 
 
-def bootstrap_fit(data, estimator, seed, n_samples: int = 500, test_size: float = 0.2, replace: bool = True):
+def get_bootstrap_samples(data: Tuple[np.ndarray], seed: int, n_samples: int = 500, replace: bool = True, noise_scale: float = 0.5):
+    """
+    Wrapper function to bootstrap column densities in a dataset.
+    The idea here is to generate "new" data by sampling with
+    replacement, and adding Gaussian noise to the log column
+    densities. The scale of the noise is set by the parameter
+    `noise_scale`.
+
+    Parameters
+    ----------
+    data : Tuple[np.ndarray]
+        2-tuple containing X (2D) and y (1D) NumPy arrays
+    seed : int
+        Seed used to set the random state
+    n_samples : int, optional
+        Target dataset size, by default 500
+    replace : bool, optional
+        Whether to do bootstrapping with replacement, by default True
+    noise_scale : float, optional
+        Gaussian scale for target noise, by default 0.5
+
+    Returns
+    -------
+    2-tuple
+        boot_X is a 2D NumPy array of features with
+        shape [N, L] where N = `n_samples`. boot_y
+        is a NumPy 1D array with bootstrapped, noisy
+        regression targets with shape [N].
+    """
+    boot_X, boot_y = resample(*data, n_samples=n_samples, replace=replace, random_state=seed)
+    rng = np.random.default_rng(seed)
+    boot_y += rng.normal(0., noise_scale, size=boot_y.size)
+    return boot_X, boot_y
+
+
+def bootstrap_fit(data, estimator, seed, n_samples: int = 500, test_size: float = 0.2, replace: bool = True, noise_scale: float = 0.5):
     X, y = data
-    boot_X, boot_y = resample(X, y, n_samples=n_samples, replace=replace, random_state=seed)
+    boot_X, boot_y = get_bootstrap_samples(data, seed, n_samples, replace, noise_scale)
     train_X, test_X, train_y, test_y = train_test_split(boot_X, boot_y, test_size=test_size, shuffle=True, random_state=seed)
     # fit to the bootstrapped training samples
     result = estimator.fit(train_X, train_y)
@@ -71,7 +137,7 @@ def bootstrap_fit(data, estimator, seed, n_samples: int = 500, test_size: float 
     train_error = mean_squared_error(train_y, estimator.predict(train_X))
     test_error = mean_squared_error(test_y, estimator.predict(test_X))
     r2 = r2_score(y, estimator.predict(X))
-    return result, (train_error, test_error, r2)
+    return result, (train_error, test_error, r2), ((train_X, train_y), (test_X, test_y))
 
 
 def standardized_fit_test(
@@ -119,6 +185,24 @@ def standardized_fit_test(
 
 
 def compose_model(base_estimator, scale: bool = False):
+    """
+    Generates a regression model using the sklearn pipeline
+    pattern. This allows a preprocessing scaler normalization
+    step prior to the estimator, allowing some easy flexibility
+    for model testing.
+
+    Parameters
+    ----------
+    base_estimator : [type]
+        An instance of an sklearn estimator
+    scale : bool, optional
+        Whether to use `StandardScaler` to normalize
+        the data prior to regression, by default False
+
+    Returns
+    -------
+    sklearn `Pipeline` object
+    """
     if scale:
         models = [("scaler", StandardScaler()), ("regressor", base_estimator)]
     else:
