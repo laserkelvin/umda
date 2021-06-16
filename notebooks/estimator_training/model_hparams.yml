@@ -1,0 +1,44 @@
+linear_regression: 
+  normalize: [true, false]
+  fit_intercept: [true, false]
+svr:
+  kernel: ["rbf"]
+  C: [10, 50]
+  gamma: [1e-3, 1e-2, 1e-1]
+  epsilon: [1e-3, 1e-2, 1e-1]
+  tol: [1e-7]
+knn:
+  n_neighbors: [4, 10, 15, 30]
+  metric: ["cosine", "euclidean"]
+  weights: ["uniform", "distance"]
+rfr:
+  n_estimators: [10, 20, 30, 50]
+  # max_leaf_nodes: [null, 5, 10, 20, 40]
+  # min_samples_leaf: [0.1, 0.3, 0.5, 0.7, 1.]
+  # bootstrap: [true, false]
+  # max_features: [0.05, 0.1, 0.2, 0.5, 0.7, 1.]
+  # max_depth: [5, 10, 15, 20]
+gbr:
+  learning_rate: [0.0001, 0.001, 0.01, 0.1]
+  n_estimators: [50, 100, 150, 300]
+  min_samples_split: [0.1, 0.3, 0.6, 1.]
+  min_samples_leaf: [0.1, 0.3, 0.6, 1.]
+  subsample: [0.2, 0.4, 0.6, 0.8, 1]
+  # max_depth: [3, 5, 10, 15]
+gpr:
+  alpha: [1e-10., 5.5e-8, 3e-5, 1e-3, 0.02, 10.]
+  # n_restarts_optimizer: [5, 10, 15, 20]
+br:
+  normalize: [true, false]
+  fit_intercept: [false]
+  tol: [1e-7]
+  alpha_1: [1e5]
+  alpha_2: [1e5]
+  lambda_1: [1e5]
+  lambda_2: [1e5]
+  alpha_init: [100.]
+  lambda_init: [ 100.]
+ridge:
+  alpha: [1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 0., 1.]
+  fit_intercept: [true, false]
+  normalize: [true, false]
