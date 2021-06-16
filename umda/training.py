@@ -211,8 +211,5 @@ def compose_model(base_estimator, scale: bool = False):
 
 
 def get_gp_kernel():
-    gp_kernel = kernels.ConstantKernel() * \
-    kernels.RBF(10.0, (1e-1, 30.0)) + \
-    kernels.RationalQuadratic(200.0, 20.0, alpha_bounds=(1e-3, 5e2), length_scale_bounds=(50.0, 1e4)) * \
-        kernels.ConstantKernel() + kernels.ConstantKernel()
+    gp_kernel = kernels.RBF() + kernels.ConstantKernel() * kernels.RationalQuadratic(alpha_bounds=(1e-3, 1e2))
     return gp_kernel
