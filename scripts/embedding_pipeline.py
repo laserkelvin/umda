@@ -74,7 +74,7 @@ def train_fit_model(data: np.ndarray, model, dask: bool = False, n_jobs: int = 8
     return (model, transform, labels)
 
 
-RERUN = False
+RERUN = True
 
 logger.info(f"mol2vec embedding dimension size: {embedding_dim}")
 logger.info(f"PCA reduced dimensionality size: {pca_dim}")

@@ -21,7 +21,7 @@ features.generate_corpus(
     RADIUS,
     sentence_type="alt",
     n_jobs=NJOBS,
-    sanitize=False,
+    sanitize=True,
 )
 
 logger.info("Training mol2vec model")

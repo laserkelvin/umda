@@ -113,6 +113,7 @@ exclude_list = [
 logger.info("Canonicizing all SMILES.")
 with Parallel(n_jobs=12) as parallel:
     results = parallel(delayed(lambda x, y: (canonicize_smi(x), y))(smi, label) for smi, label in tqdm(zip(smi_list, labels)))
+results = list(filter(lambda x: x[0] is not None, results))
 #combined = Parallel(n_jobs=12)((delayed(canonicize_smi)(smi), label) for smi, label in tqdm(zip(smi_list, labels)))
 
 final_df = pd.DataFrame(results, columns=["Raw", "Labels"])
