@@ -39,7 +39,7 @@ full_dataset = h5py.File("../data/processed/smiles_embeddings_300.h5", "r")
 dataset = da.from_array(precomputed_h5["pca"])
 full_smiles = np.array(full_dataset["smiles"])
 # get the GP regressor
-gp_model = load("../models/gpr_grid.pkl").best_estimator_
+gp_model = load("../notebooks/estimator_training/outputs/grid_search/best_models.pkl")["gpr"]
 
 results = list()
 for tmc_index, vector in tqdm(enumerate(vecs), total=len(tmc1_smi)):
@@ -70,7 +70,7 @@ rec_df = rec_df.loc[
 ]
 rec_df.reset_index(inplace=True, drop=True)
 # now we run predictions for the column densities
-rec_vecs = np.vstack(embedding_model.vectorize(smi) for smi in rec_df["recommendation"])
+rec_vecs = np.vstack([embedding_model.vectorize(smi) for smi in rec_df["recommendation"]])
 columns, std = gp_model.predict(rec_vecs, return_std=True)
 rec_df["gpr_column"] = columns
 rec_df["uncertainty"] = std

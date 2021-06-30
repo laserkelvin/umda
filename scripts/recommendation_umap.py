@@ -1,20 +1,18 @@
 
 import numpy as np
+import pandas as pd
 from umap import UMAP
-from joblib import load
 import h5py
 
-embedding_model = load("../models/EmbeddingModel.pkl")
-tmc1_data = load("../data/processed/tmc1_ready.pkl")
-tmc1_data = tmc1_data.loc[tmc1_data["canonical"] != "[HH]"]
-tmc1_data.reset_index(drop=True, inplace=True)
-tmc1_smi = tmc1_data["canonical"].tolist()
-vecs = np.vstack([embedding_model.vectorize(smi) for smi in tmc1_smi])
+from umda.data import load_pipeline, load_data
+
+embedding_model = load_pipeline()
+tmc1_data = load_data()[-1]
+vecs = np.vstack([embedding_model.vectorize(smi) for smi in tmc1_data["SMILES"]])
 rec_vecs = list()
-with open("targets.smi", "r") as read_file:
-    for smi in read_file.readlines():
-        rec_vecs.append(embedding_model.vectorize(smi))
-rec_vecs = np.vstack(rec_vecs)
+
+recs = pd.read_csv("../notebooks/reports/tmc1_recommendations_latest.csv")
+rec_vecs = np.vstack([embedding_model(smi) for smi in recs["Recommendation"]])
 # stack them together
 X = np.vstack([vecs, rec_vecs])
 
