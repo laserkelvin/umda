@@ -100,4 +100,8 @@ def canonicize_smi(smi: str) -> str:
     This ensures that all comparisons made subsequently are made with the
     same SMILES representation, if it exists.
     """
-    return Chem.MolToSmiles(Chem.MolFromSmiles(smi, sanitize=False), canonical=True)
+    mol = Chem.MolFromSmiles(smi)
+    if mol:
+        return Chem.MolToSmiles(mol, canonical=True)
+    else:
+        return None
