@@ -5,7 +5,7 @@ from math import floor
 import numpy as np
 from scipy.stats import lognorm, uniform
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.model_selection import ShuffleSplit, RandomizedSearchCV, GridSearchCV, train_test_split
+from sklearn.model_selection import ShuffleSplit, RandomizedSearchCV, GridSearchCV, train_test_split, KFold, cross_val_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.gaussian_process import kernels
@@ -85,7 +85,11 @@ def grid_cv_search(data: Tuple[np.ndarray], estimator, hparams, seed: int, n_spl
     kwargs.setdefault("n_jobs", 16)
     kwargs.setdefault("scoring", "r2")
     kwargs.setdefault("refit", False)
-    X, y = data
+    try:
+        X, y, indices = data
+    except:
+        X, y = data
+        indices = None
     if cv is None:
         splitter = ShuffleSplit(n_splits, random_state=seed)
     else:
@@ -96,8 +100,22 @@ def grid_cv_search(data: Tuple[np.ndarray], estimator, hparams, seed: int, n_spl
         cv=splitter,
         **kwargs
     )
-    result = grid_search.fit(X, y)
+    result = grid_search.fit(X, y, indices)
     return result
+
+
+def get_best_model(estimator, data: Tuple[np.ndarray], cv, **kwargs):
+    kwargs.setdefault("n_jobs", 8)
+    kwargs.setdefault("scoring", "neg_mean_squared_error")
+    X, y, indices = data
+    scores = cross_val_score(estimator, X, y, groups=indices, **kwargs)
+    best_set = scores.argmax()
+    # now get retrieve the dataset and refit
+    for index, split in enumerate(cv.split(X, y, indices)):
+        if index == best_set:
+            train, test = split
+            break
+    return estimator.fit(X[train], y[train]), (train, test)
 
 
 def get_molecule_split_bootstrap(data: Tuple[np.ndarray], seed: int, n_samples: int = 500, replace: bool = True, noise_scale: float = 0.5, molecule_split: float = 0.2, test_size: float = 0.2):
@@ -131,6 +149,7 @@ def get_molecule_split_bootstrap(data: Tuple[np.ndarray], seed: int, n_samples: 
     train_indices = indices[split_num:]
     test_indices.sort(); train_indices.sort()
     sets = list()
+    indices = list()
     for index_set, train in zip([train_indices, test_indices], [True, False]):
         if train:
             num_samples = int(n_samples * (1 - test_size))
@@ -145,7 +164,8 @@ def get_molecule_split_bootstrap(data: Tuple[np.ndarray], seed: int, n_samples: 
         sets.append(
             (resampled_X[reshuffled_indices], resampled_y[reshuffled_indices])
         )
-    return sets
+        indices.append(resampled_indices[reshuffled_indices])
+    return sets, np.concatenate(indices)
 
 
 def get_bootstrap_samples(data: Tuple[np.ndarray], seed: int, n_samples: int = 500, replace: bool = True, noise_scale: float = 0.5):
@@ -274,10 +294,10 @@ def get_gp_kernel():
 
 
 class BootstrappedCV(BaseCrossValidator):
-    def __init__(self, train_mask: int, n_splits: int, seed: int):
-        self.train_mask = train_mask.astype(bool)
-        self.n_splits = n_splits
-        self.random_state = np.random.RandomState(seed)
+    def __init__(self, indices, n_splits: int):
+        self.indices = indices
+        self.unique = np.unique(indices)
+        self.splitter = KFold
 
     def _iter_test_indices(self, X, y=None, groups=None):
         n_samples = _num_samples(X)
@@ -324,20 +344,19 @@ class SamplesBootstrappedCV(BootstrappedCV):
             yield train, test
 
 
-def custom_learning_curve(estimator, data, fractions, train_mask, n_splits, seed):
-    X, y = data
-    full_train = list()
-    full_test = list()
-    for fraction in fractions:
-        cv = SamplesBootstrappedCV(train_mask, n_splits, seed, fraction)
-        train_mse = list()
-        test_mse = list()
-        for split in cv.split(X):
+def custom_learning_curve(estimator, data, true, fractions, cv):
+    X, y, groups = data
+    # the actual TMC-1 data
+    true_X, true_y = true
+    full_data = list()
+    steps = (fractions * y.size).astype(int)
+    for step in steps:
+        step_data = list()
+        temp_X, temp_y, temp_group = X[:step], y[:step], groups[:step]
+        for split in cv.split(temp_X, temp_y, temp_group):
             train_index, test_index = split
-            result = estimator.fit(X[train_index], y[train_index])
-            train_mse.append(mean_squared_error(y[train_index], result.predict(X[train_index])))
-            test_mse.append(mean_squared_error(y[test_index], result.predict(X[test_index])))
-        full_train.append(np.array(train_mse))
-        full_test.append(np.array(test_mse))
-    return np.vstack(full_train), np.vstack(full_test)
+            result = estimator.fit(temp_X[train_index], temp_y[train_index])
+            step_data.append(mean_squared_error(true_y, result.predict(true_X)))
+        full_data.append(np.array(step_data))
+    return steps, np.vstack(full_data)
     
