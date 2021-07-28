@@ -1,5 +1,6 @@
 
 from typing import Tuple
+from math import floor
 
 import numpy as np
 from scipy.stats import lognorm, uniform
@@ -9,6 +10,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.gaussian_process import kernels
 from sklearn.utils import resample
+
+# these imports are specifically for writing the custom CV
+from sklearn.model_selection._split import BaseCrossValidator
+from sklearn.utils.validation import _num_samples
 
 
 def random_cv_search(
@@ -76,12 +81,15 @@ def random_cv_search(
     return result
 
 
-def grid_cv_search(data: Tuple[np.ndarray], estimator, hparams, seed: int, n_splits: int = 5, **kwargs):
+def grid_cv_search(data: Tuple[np.ndarray], estimator, hparams, seed: int, n_splits: int = 5, cv=None, **kwargs):
     kwargs.setdefault("n_jobs", 16)
     kwargs.setdefault("scoring", "r2")
     kwargs.setdefault("refit", False)
     X, y = data
-    splitter = ShuffleSplit(n_splits, random_state=seed)
+    if cv is None:
+        splitter = ShuffleSplit(n_splits, random_state=seed)
+    else:
+        splitter = cv
     grid_search = GridSearchCV(
         estimator,
         {f"regressor__{key}": value for key, value in hparams.items()},
@@ -90,6 +98,54 @@ def grid_cv_search(data: Tuple[np.ndarray], estimator, hparams, seed: int, n_spl
     )
     result = grid_search.fit(X, y)
     return result
+
+
+def get_molecule_split_bootstrap(data: Tuple[np.ndarray], seed: int, n_samples: int = 500, replace: bool = True, noise_scale: float = 0.5, molecule_split: float = 0.2, test_size: float = 0.2):
+    """
+    This function specifically splits the training set into train
+    and validation sets within molecule classes. The idea behind this
+    is to prevent data leakage.
+
+    Parameters
+    ----------
+    data : Tuple[np.ndarray]
+        [description]
+    seed : int
+        [description]
+    n_samples : int, optional
+        [description], by default 500
+    replace : bool, optional
+        [description], by default True
+    noise_scale : float, optional
+        [description], by default 0.5
+    molecule_split : float, optional
+        [description], by default 0.2
+    """
+    true_X, true_y = data
+    indices = np.arange(len(true_y))
+    rng = np.random.default_rng(seed)
+    # shuffle the molecules
+    rng.shuffle(indices)
+    split_num = int(len(indices) * molecule_split)
+    test_indices = indices[:split_num]
+    train_indices = indices[split_num:]
+    test_indices.sort(); train_indices.sort()
+    sets = list()
+    for index_set, train in zip([train_indices, test_indices], [True, False]):
+        if train:
+            num_samples = int(n_samples * (1 - test_size))
+        else:
+            num_samples = int(n_samples * test_size)
+        resampled_indices = resample(index_set, n_samples=num_samples, replace=replace, random_state=seed)
+        resampled_indices.sort()
+        resampled_X, resampled_y = true_X[resampled_indices], true_y[resampled_indices]
+        reshuffled_indices = np.arange(resampled_y.size)
+        rng.shuffle(reshuffled_indices)
+        resampled_y += rng.normal(0., noise_scale, size=resampled_y.size)
+        sets.append(
+            (resampled_X[reshuffled_indices], resampled_y[reshuffled_indices])
+        )
+    return sets
 
 
 def get_bootstrap_samples(data: Tuple[np.ndarray], seed: int, n_samples: int = 500, replace: bool = True, noise_scale: float = 0.5):
@@ -215,3 +271,73 @@ def get_gp_kernel():
     # gp_kernel = kernels.RationalQuadratic(alpha=100) * 1. + kernels.RBF() * 1e-2 + kernels.WhiteKernel()
     gp_kernel = kernels.RationalQuadratic() + kernels.DotProduct() + kernels.WhiteKernel()
     return gp_kernel
+
+
+class BootstrappedCV(BaseCrossValidator):
+    def __init__(self, train_mask: int, n_splits: int, seed: int):
+        self.train_mask = train_mask.astype(bool)
+        self.n_splits = n_splits
+        self.random_state = np.random.RandomState(seed)
+
+    def _iter_test_indices(self, X, y=None, groups=None):
+        n_samples = _num_samples(X)
+        indices = np.arange(n_samples)
+        train_group, test_group = indices[self.train_mask], indices[np.logical_not(self.train_mask)]
+        min_train, max_train = floor(train_group.size * 0.25), floor(train_group.size * 0.75)
+        min_test, max_test = floor(test_group.size * 0.25), floor(test_group.size * 0.75)
+        for _ in range(self.n_splits):
+            # generate a random number of samples to bootstrap
+            # from either group uniformly
+            num_train = self.random_state.randint(min_train, max_train)
+            num_test = self.random_state.randint(min_test, max_test)
+            train = self._bootstrap(train_group, num_train)
+            test = self._bootstrap(test_group, num_test)
+            yield train, test
+
+    def _bootstrap(self, group: np.ndarray, n_samples: int):
+        return resample(group, replace=False, n_samples=n_samples, random_state=self.random_state)
+
+    def get_n_splits(self, X, y, groups):
+        return self.n_splits
+
+    def split(self, X, y=None, groups=None):
+        return self._iter_test_indices(X, y, groups)
+            
+
+class SamplesBootstrappedCV(BootstrappedCV):
+    def __init__(self, train_mask: int, n_splits: int, seed: int, fraction: float):
+        assert 0. <= fraction <= 1.
+        super().__init__(train_mask, n_splits, seed)
+        self.fraction = fraction
+
+    def _iter_test_indices(self, X, y=None, groups=None):
+        n_samples = _num_samples(X)
+        indices = np.arange(n_samples)
+        train_group, test_group = indices[self.train_mask], indices[np.logical_not(self.train_mask)]
+        # number of training examples correspond to a fraction
+        num_train = int(self.fraction * train_group.size)
+        num_test = int(self.fraction * test_group.size)
+        for _ in range(self.n_splits):
+            # generate a specified number of examples
+            train = self._bootstrap(train_group, num_train)
+            test = self._bootstrap(test_group, num_test)
+            yield train, test
+
+
+def custom_learning_curve(estimator, data, fractions, train_mask, n_splits, seed):
+    X, y = data
+    full_train = list()
+    full_test = list()
+    for fraction in fractions:
+        cv = SamplesBootstrappedCV(train_mask, n_splits, seed, fraction)
+        train_mse = list()
+        test_mse = list()
+        for split in cv.split(X):
+            train_index, test_index = split
+            result = estimator.fit(X[train_index], y[train_index])
+            train_mse.append(mean_squared_error(y[train_index], result.predict(X[train_index])))
+            test_mse.append(mean_squared_error(y[test_index], result.predict(X[test_index])))
+        full_train.append(np.array(train_mse))
+        full_test.append(np.array(test_mse))
+    return np.vstack(full_train), np.vstack(full_test)
+    
