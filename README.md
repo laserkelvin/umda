@@ -19,6 +19,10 @@ molecule feature vectors are learned using `mol2vec`, which is unsupervised. The
 act of predicting column densities requires training a _supervised_ model. I think
 the former is more exciting in terms of development than the latter.
 
+If you used the list of recommendations generated from this work as part of your
+own observations or work, please cite the Zenodo repository [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5080543.svg)](https://doi.org/10.5281/zenodo.5080543) and the paper as it comes out.
+In the meantime, please cite this repository
+
 ## Installation
 
 Currently, the codebase is not quite ready for public consumption: while the
