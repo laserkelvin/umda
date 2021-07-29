@@ -7,6 +7,9 @@ from dask_ml.metrics import pairwise_distances
 from joblib import load
 from tqdm.auto import tqdm
 
+from umda.data import load_pipeline
+from umda.utils import paths
+
 # we just want to recommend molecules with these elements
 keep_elements = ["H", "C", "O", "N", "P", "S", "Si"]
 element_filter = [el.symbol for el in elements if el.symbol not in keep_elements]
@@ -25,8 +28,8 @@ def is_not_complex(smi: str) -> bool:
     return "." not in smi
 
 
-embedding_model = load("../models/EmbeddingModel.pkl")
-tmc1_df = load("../data/processed/tmc1_ready.pkl")
+embedding_model = load_pipeline()
+tmc1_df = load(paths.get("processed").joinpath("tmc1_ready.pkl"))
 # let's ignore H2
 tmc1_df = tmc1_df.loc[tmc1_df["canonical"] != "[HH]"]
 tmc1_df.reset_index(drop=True, inplace=True)
@@ -34,11 +37,11 @@ tmc1_df.reset_index(drop=True, inplace=True)
 tmc1_smi = tmc1_df["canonical"].tolist()
 vecs = np.vstack([embedding_model.vectorize(smi) for smi in tmc1_smi])
 # load the full dataset ready to go
-precomputed_h5 = h5py.File("../data/processed/pipeline_embeddings_70.h5", "r")
-full_dataset = h5py.File("../data/processed/smiles_embeddings_300.h5", "r")
+precomputed_h5 = h5py.File(paths.get("processed").joinpath("pipeline_embeddings_70.h5"), "r")
+full_dataset = h5py.File(paths.get("processed").joinpath("smiles_embeddings_300.h5"), "r")
 dataset = da.from_array(precomputed_h5["pca"])
 full_smiles = np.array(full_dataset["smiles"])
-# get the GP regressor
+# get the GP regressor from the estimator training
 gp_model = load("../notebooks/estimator_training/outputs/grid_search/best_models.pkl")["gpr"]
 
 results = list()
@@ -46,6 +49,7 @@ for tmc_index, vector in tqdm(enumerate(vecs), total=len(tmc1_smi)):
     # we don't really care about the distance values, just the index
     distances = pairwise_distances(dataset, vector[None, :]).ravel().compute()
     sorted_indices = np.argsort(distances)
+    # get up to 100 recommendations
     top_ten = sorted_indices[:100]
     for index in top_ten:
         # ignore if it's the same SMILES code
@@ -76,11 +80,11 @@ rec_df["gpr_column"] = columns
 rec_df["uncertainty"] = std
 rec_df.to_csv("tmc1_recommendations.csv", index=False)
 # now write out a smiles file
-with open("targets.smi", "w+") as write_file:
+with open(paths.get("processed").joinpath("targets.smi"), "w+") as write_file:
     write_file.write("\n".join(rec_df["recommendation"].tolist()))
 
 # do the complete set including TMC-1 molecules
 full = np.vstack([vecs, rec_vecs])
 _, cov = gp_model.predict(full, return_cov=True)
-np.save("tmc1_recommendations_cov", cov)
+np.save(paths.get("processed").joinpath("tmc1_recommendations_cov"), cov)
 
