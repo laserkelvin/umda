@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from umda.data import load_pipeline, load_data
+from umda.utils import paths
 
 embedder = load_pipeline()
 tmc1_df = load_data()[-1]
@@ -51,4 +52,4 @@ df["truth"] = np.log10(columns)
 df.sort_values("distance", inplace=True)
 df.reset_index(drop=True, inplace=True)
 
-df.to_csv("demoset_results.csv", index=False)
+df.to_csv(paths.get("processed").joinpath("demoset_results.csv"), index=False)
