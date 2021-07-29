@@ -5,12 +5,11 @@ from sklearn.metrics import pairwise_distances
 import h5py
 import numpy as np
 import pandas as pd
-from umda import EmbeddingModel
 
-embedder = load("../models/EmbeddingModel.pkl")
-tmc1_df = load("../data/processed/tmc1_ready.pkl")
-tmc1_df = tmc1_df.loc[tmc1_df["canonical"] != "[HH]"]
-tmc1_df.reset_index(inplace=True, drop=True)
+from umda.data import load_pipeline, load_data
+
+embedder = load_pipeline()
+tmc1_df = load_data()[-1]
 
 # do linear interpolation between the two molecules, and find
 # the molecules in TMC-1 closest to the interpolated values
@@ -21,7 +20,7 @@ diff = (end - begin)[None,:]
 x = np.linspace(0., 1., 8)[:,None]
 values = begin + (diff * x)
 
-tmc1_vecs = np.vstack([embedder.vectorize(smi) for smi in tmc1_df["canonical"]])
+tmc1_vecs = np.vstack([embedder.vectorize(smi) for smi in tmc1_df["SMILES"]])
 dists = pairwise_distances(values, tmc1_vecs)
 chosen = list()
 for index, dist in enumerate(dists):
@@ -32,7 +31,7 @@ for index, dist in enumerate(dists):
             break
 select = tmc1_df.iloc[chosen]
 print(select["Molecule"])
-targets = select["canonical"].tolist()
+targets = select["SMILES"].tolist()
 print(targets)
 
 columns = select["Column density (cm^-2)"].values
@@ -40,10 +39,9 @@ vectors = np.vstack([embedder(smi) for smi in targets])
 
 distances = np.sqrt(np.sum((vectors - vectors[0])**2., axis=1))
 results = dict()
+best_models = load("../notebooks/estimator_training/outputs/grid_search/best_models.pkl")
 
-for grid in Path("../models").rglob("*_grid.pkl"):
-    name = str(grid).split("_")[0].split("/")[-1]
-    model = load(grid)#.best_estimator_
+for name, model in best_models.items():
     results[name] = model.predict(vectors)
 
 df = pd.DataFrame(results)
