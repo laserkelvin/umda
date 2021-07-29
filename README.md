@@ -14,6 +14,11 @@ molecules on a Dell XPS 15 (32 GB ram, 6 core i7-9750H) without much difficulty
 thanks to frameworks like `dask` that can abstract away a large amount of the
 parallelization and out-of-memory operations.
 
+As a point of clarification: "unsupervised" in the title refers to the fact that the
+molecule feature vectors are learned using `mol2vec`, which is unsupervised. The
+act of predicting column densities requires training a _supervised_ model. I think
+the former is more exciting in terms of development than the latter.
+
 ## Installation
 
 Currently, the codebase is not quite ready for public consumption: while the
