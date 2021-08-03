@@ -1,6 +1,6 @@
 # Unsupervised Molecule Discovery in Astrophysics
 
-![umap-image](umap_image.png)
+![umap-image](project-image.png)
 
 ## Applying cheminformatics to astrochemistry
 
