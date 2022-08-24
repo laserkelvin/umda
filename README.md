@@ -32,7 +32,7 @@ please raise an issue in this repository!
 
 The `Makefile` `environment` recipe should recreate the software environment
 needed for `umda` to work. Simply run `make environment` to set everything
-up automatically.
+up automatically; you can then activate the environment with `conda activate umda`.
 
 ## Instructions
 
